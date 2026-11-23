@@ -356,7 +356,7 @@ Prompt handoff was exercised through the real UI on both paths:
 
 ### Git and deployment
 
-The redesign is committed as a focused frontend/documentation change on `main`, with no secrets, `.env`, API/webhook credentials, generated build output, or private generation images added. The public repository remains <https://github.com/Jasowills/vellum-studio>. The live demo is still the ephemeral Cloudflare quick tunnel noted above; durable hosting remains blocked by the same external credential/billing constraints, not by application code.
+The redesign is committed on `main` as `1bad8ee` — “Rebuild Vellum as MIDNIGHT creative instrument” — with no secrets, `.env`, API/webhook credentials, generated build output, or private generation images added. The push-triggered `tests` workflow `45275710397` completed successfully in 51s. The public repository remains <https://github.com/Jasowills/vellum-studio>. The live demo is still the ephemeral Cloudflare quick tunnel noted above; durable hosting remains blocked by the same external credential/billing constraints, not by application code.
 
 ### Genuine remaining work
 
