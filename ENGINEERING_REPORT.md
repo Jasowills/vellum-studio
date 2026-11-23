@@ -22,7 +22,7 @@ Local cost .................................................... $1.462355000
 Difference .................................................... $0.000000000
 ```
 
-The automated suite has **81 passing tests / 342 assertions**, with Pixelforge faked in every test. Pint, Vue/TS checks, type checking, and the production build all pass. Browser QA covered every main page at desktop and mobile widths with axe-core; no WCAG A/AA violations were found.
+The automated suite has **81 passing tests / 342 assertions**, with Pixelforge faked in every test. Pint, PHPStan level 7, Vue/TS checks, type checking, and the production build all pass; the GitHub Actions `tests` workflow is green on `main`. Browser QA covered every main page at desktop and mobile widths with axe-core; no WCAG A/AA violations were found.
 
 ---
 
@@ -233,14 +233,19 @@ Mobile viewport `390 × 844` showed `scrollWidth === clientWidth` on the landing
 docker run --rm --network vellum-net -v "$PWD":/app -w /app vellum-dev php artisan test --compact
 # => Tests: 81 passed (342 assertions)
 
-docker run --rm --network vellum-net -v "$PWD":/app -w /app vellum-dev ./vendor/bin/pint app tests --test
-# => PASS 85 files
+docker run --rm --network vellum-net -v "$PWD":/app -w /app vellum-dev ./vendor/bin/pint --test
+# => PASS 121 files
+
+docker run --rm --network vellum-net -v "$PWD":/app -w /app vellum-dev ./vendor/bin/phpstan analyse --no-progress --memory-limit=1G
+# => [OK] No errors
 
 # Frontend
-npm run check          # formatting + lint, 79 files checked
+npm run check          # formatting + lint: 80 formatted files, 72 linted files; all pass
 npm run types:check    # vue-tsc --noEmit
 npm run build          # production build
 ```
+
+GitHub Actions runs the same checks through `composer ci:check` on every push. The latest `tests` workflow on `main` is green for commit `c4ceb20` (run `45244621743`).
 
 Tests deliberately use `https://pixelforge.test/v1` and HTTP fakes. `phpunit.xml` forces `APP_ENV=testing`, SQLite `:memory:`, array cache/session, queue `sync`, and a fixed `APP_KEY` so a developer's `.env` cannot redirect tests to a real database.
 
