@@ -245,7 +245,7 @@ npm run types:check    # vue-tsc --noEmit
 npm run build          # production build
 ```
 
-GitHub Actions runs the same checks through `composer ci:check` on every push. The latest `tests` workflow on `main` is green for commit `c4ceb20` (run `45244621743`).
+GitHub Actions runs the same checks through `composer ci:check` on every push. The `tests` workflow has been verified green on `main`, including run `45244875780`.
 
 Tests deliberately use `https://pixelforge.test/v1` and HTTP fakes. `phpunit.xml` forces `APP_ENV=testing`, SQLite `:memory:`, array cache/session, queue `sync`, and a fixed `APP_KEY` so a developer's `.env` cannot redirect tests to a real database.
 
