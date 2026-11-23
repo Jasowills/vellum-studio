@@ -48,11 +48,17 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
         ];
     }
 
+    /**
+     * @return HasMany<Generation, $this>
+     */
     public function generations(): HasMany
     {
         return $this->hasMany(Generation::class);
     }
 
+    /**
+     * @return HasMany<GenerationCharge, $this>
+     */
     public function charges(): HasMany
     {
         return $this->hasMany(GenerationCharge::class);

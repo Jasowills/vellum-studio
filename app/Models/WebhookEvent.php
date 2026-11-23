@@ -2,11 +2,29 @@
 
 namespace App\Models;
 
+use Carbon\CarbonImmutable;
 use Database\Factories\WebhookEventFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property int $id
+ * @property string $provider_event_id
+ * @property string $type
+ * @property string $status
+ * @property int|null $generation_id
+ * @property array<string, mixed> $payload
+ * @property int $delivery_attempt
+ * @property int|null $signature_timestamp
+ * @property int $processing_attempts
+ * @property string|null $last_error
+ * @property CarbonImmutable|null $processed_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read Generation|null $generation
+ */
 class WebhookEvent extends Model
 {
     /** @use HasFactory<WebhookEventFactory> */
@@ -44,6 +62,9 @@ class WebhookEvent extends Model
         ];
     }
 
+    /**
+     * @return BelongsTo<Generation, $this>
+     */
     public function generation(): BelongsTo
     {
         return $this->belongsTo(Generation::class);

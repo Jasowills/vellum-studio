@@ -12,6 +12,11 @@ use InvalidArgumentException;
  */
 final readonly class PricingTable
 {
+    /**
+     * @param  array<string, mixed>  $rates
+     * @param  array<string, mixed>  $outputTokens
+     * @param  array<string, mixed>  $reasoning
+     */
     public function __construct(
         public array $rates,
         public int $charactersPerTextToken,
@@ -22,6 +27,9 @@ final readonly class PricingTable
         public string $fetchedAt,
     ) {}
 
+    /**
+     * @param  array<array-key, mixed>  $payload
+     */
     public static function fromPayload(array $payload, ?string $fetchedAt = null): self
     {
         $rates = $payload['rates'] ?? null;
@@ -86,7 +94,13 @@ final readonly class PricingTable
 
     public function rate(string $category): string
     {
-        return $this->rates[$category] ?? throw new InvalidArgumentException("Unknown rate [{$category}].");
+        $rate = $this->rates[$category] ?? null;
+
+        if (! is_string($rate)) {
+            throw new InvalidArgumentException("Unknown rate [{$category}].");
+        }
+
+        return $rate;
     }
 
     public function outputTokensFor(string $quality, string $size): int
@@ -105,9 +119,19 @@ final readonly class PricingTable
      */
     public function reasoningRangeFor(string $quality): array
     {
-        return $this->reasoning[$quality] ?? throw new InvalidArgumentException("Unknown quality [{$quality}].");
+        $range = $this->reasoning[$quality] ?? null;
+
+        if (! is_array($range) || ! isset($range['min'], $range['max'])
+            || ! is_int($range['min']) || ! is_int($range['max'])) {
+            throw new InvalidArgumentException("Unknown quality [{$quality}].");
+        }
+
+        return ['min' => $range['min'], 'max' => $range['max']];
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function toArray(): array
     {
         return [

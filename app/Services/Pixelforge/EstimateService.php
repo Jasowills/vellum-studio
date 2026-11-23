@@ -20,6 +20,10 @@ use InvalidArgumentException;
  */
 class EstimateService
 {
+    /**
+     * @param  array<int, string>  $referenceImages
+     * @return array<string, mixed>
+     */
     public function estimate(PricingTable $pricing, string $prompt, string $size, string $quality, array $referenceImages): array
     {
         if (! in_array($size, config('pixelforge.sizes'), true)) {

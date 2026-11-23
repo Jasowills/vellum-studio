@@ -58,6 +58,9 @@ class GenerationFactory extends Factory
         ];
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public static function pricingSnapshot(): array
     {
         return [

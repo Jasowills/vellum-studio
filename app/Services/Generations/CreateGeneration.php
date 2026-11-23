@@ -23,6 +23,7 @@ class CreateGeneration
     ) {}
 
     /**
+     * @param  array<string, mixed>  $input
      * @return array{generation: Generation, created: bool}
      */
     public function handle(User $user, array $input): array
@@ -131,6 +132,10 @@ class CreateGeneration
         return 'vellum_u'.$user->id.'_'.$attemptToken;
     }
 
+    /**
+     * @param  array<string, mixed>  $input
+     * @param  array<int, string>  $referenceImages
+     */
     private function requestHash(array $input, array $referenceImages): string
     {
         return hash('sha256', json_encode([

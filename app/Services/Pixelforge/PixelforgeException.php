@@ -8,6 +8,9 @@ use RuntimeException;
 
 class PixelforgeException extends RuntimeException
 {
+    /**
+     * @param  array<string, mixed>  $errors
+     */
     public function __construct(
         public readonly ?int $status,
         public readonly string $errorCode,
@@ -115,9 +118,9 @@ class PixelforgeException extends RuntimeException
 
     private static function retryAfter(Response $response): ?int
     {
-        $value = $response->header('Retry-After');
+        $value = $response->toPsrResponse()->getHeaderLine('Retry-After');
 
-        if ($value === null || $value === '') {
+        if ($value === '') {
             return null;
         }
 

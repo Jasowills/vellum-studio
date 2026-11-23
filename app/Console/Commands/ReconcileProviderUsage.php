@@ -63,6 +63,9 @@ class ReconcileProviderUsage extends Command
         return $this->option('fail-on-mismatch') ? self::FAILURE : self::SUCCESS;
     }
 
+    /**
+     * @param  array<array-key, mixed>  $rows
+     */
     private function count(array $rows): int
     {
         return count($rows);

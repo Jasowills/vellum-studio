@@ -28,6 +28,10 @@ final class Money
         'reasoning_tokens',
     ];
 
+    /**
+     * @param  array<string, mixed>  $usage
+     * @param  array<string, mixed>  $rates
+     */
     public static function providerCostNanos(array $usage, array $rates): int
     {
         $total = BigDecimal::zero();

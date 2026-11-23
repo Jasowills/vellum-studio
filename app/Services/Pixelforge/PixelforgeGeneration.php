@@ -12,6 +12,13 @@ use InvalidArgumentException;
  */
 final readonly class PixelforgeGeneration
 {
+    /**
+     * @param  array<int, string>  $referenceImages
+     * @param  array<array-key, mixed>  $metadata
+     * @param  array<string, int>|null  $usage
+     * @param  array<string, string>|null  $rates
+     * @param  array<array-key, mixed>|null  $error
+     */
     public function __construct(
         public string $id,
         public GenerationStatus $status,
@@ -30,6 +37,9 @@ final readonly class PixelforgeGeneration
         public ?CarbonImmutable $completedAt,
     ) {}
 
+    /**
+     * @param  array<string, mixed>  $data
+     */
     public static function fromArray(array $data): self
     {
         $id = $data['id'] ?? null;
@@ -46,16 +56,32 @@ final readonly class PixelforgeGeneration
         $usage = $data['usage'] ?? null;
         $rates = $data['rates'] ?? null;
 
-        if ($usage !== null && is_array($usage)) {
+        if ($usage !== null) {
+            if (! is_array($usage)) {
+                throw new InvalidArgumentException('Pixelforge usage is invalid.');
+            }
+
             $usage = self::normalizeUsage($usage);
         }
 
-        if ($rates !== null && is_array($rates)) {
+        if ($rates !== null) {
+            if (! is_array($rates)) {
+                throw new InvalidArgumentException('Pixelforge generation rates are invalid.');
+            }
+
+            $normalizedRates = [];
+
             foreach (['input_text_tokens', 'input_image_tokens', 'output_tokens', 'reasoning_tokens'] as $key) {
-                if (! isset($rates[$key]) || ! is_string($rates[$key]) || ! preg_match('/^\d+(\.\d+)?$/', $rates[$key])) {
+                $rate = $rates[$key] ?? null;
+
+                if (! is_string($rate) || ! preg_match('/^\d+(\.\d+)?$/', $rate)) {
                     throw new InvalidArgumentException("Pixelforge generation rates are missing or invalid for [{$key}].");
                 }
+
+                $normalizedRates[$key] = $rate;
             }
+
+            $rates = $normalizedRates;
         }
 
         return new self(
@@ -93,6 +119,10 @@ final readonly class PixelforgeGeneration
         return (int) ($this->usage['total_tokens'] ?? array_sum($this->usage));
     }
 
+    /**
+     * @param  array<array-key, mixed>  $usage
+     * @return array<string, int>
+     */
     private static function normalizeUsage(array $usage): array
     {
         $normalized = [];

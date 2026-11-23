@@ -10,6 +10,10 @@ use Throwable;
 
 class PixelforgeClient
 {
+    /**
+     * @param  array<int, string>  $referenceImages
+     * @param  array<string, mixed>  $metadata
+     */
     public function createGeneration(
         string $prompt,
         string $size,
@@ -78,6 +82,9 @@ class PixelforgeClient
         return PricingTable::fromPayload($body);
     }
 
+    /**
+     * @return array{data: array<int, array<string, mixed>>, total: array<string, mixed>}
+     */
     public function usage(string $startDate, string $endDate): array
     {
         $response = $this->send(fn (PendingRequest $http) => $http->get('/usage', [

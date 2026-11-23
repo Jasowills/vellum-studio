@@ -7,6 +7,7 @@ use App\Jobs\ReconcileGenerationJob;
 use App\Jobs\SubmitGenerationJob;
 use App\Models\Generation;
 use Illuminate\Console\Command;
+use Illuminate\Database\Eloquent\Builder;
 
 class ReconcileGenerations extends Command
 {
@@ -24,6 +25,7 @@ class ReconcileGenerations extends Command
             ->where('status', GenerationStatus::Pending)
             ->whereNull('provider_generation_id')
             ->where(function ($query) {
+                /** @var Builder<Generation> $query */
                 $query->whereNull('next_submit_at')
                     ->orWhere('next_submit_at', '<=', now());
             })
@@ -38,17 +40,21 @@ class ReconcileGenerations extends Command
 
         $due = Generation::query()
             ->where(function ($query) {
+                /** @var Builder<Generation> $query */
                 $query->whereIn('status', [GenerationStatus::Queued, GenerationStatus::Processing])
                     ->where(function ($inner) {
+                        /** @var Builder<Generation> $inner */
                         $inner->whereNull('next_reconcile_at')
                             ->orWhere('next_reconcile_at', '<=', now());
                     });
             })
             ->orWhere(function ($query) {
+                /** @var Builder<Generation> $query */
                 $query->where('status', GenerationStatus::Failed)
                     ->where('failure_code', 'provider_unconfirmed')
                     ->whereDoesntHave('charge')
                     ->where(function ($inner) {
+                        /** @var Builder<Generation> $inner */
                         $inner->whereNull('next_reconcile_at')
                             ->orWhere('next_reconcile_at', '<=', now());
                     });

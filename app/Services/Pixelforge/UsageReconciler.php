@@ -101,7 +101,7 @@ class UsageReconciler
                 ...$providerTotal,
                 'cost_usd' => Money::usdString($providerTotal['cost_nanos']),
                 'cost' => Money::formatExact($providerTotal['cost_nanos']),
-                'raw_total' => $provider['total'] ?? [],
+                'raw_total' => $provider['total'],
             ],
             'local' => [
                 ...$localTotal,

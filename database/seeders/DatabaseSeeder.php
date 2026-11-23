@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Carbon;
 
 class DatabaseSeeder extends Seeder
 {
@@ -19,29 +20,36 @@ class DatabaseSeeder extends Seeder
     {
         $this->upsertUser(
             name: 'Studio Operator',
-            email: env('ADMIN_EMAIL', 'admin@vellum.studio'),
-            password: env('ADMIN_PASSWORD', app()->isProduction() ? null : 'VellumAdmin!2026'),
+            email: (string) config('demo.admin_email'),
+            password: $this->password('demo.admin_password'),
             isAdmin: true,
         );
 
         $this->upsertUser(
             name: 'Vellum Studio',
-            email: env('DEMO_EMAIL', 'studio@vellum.studio'),
-            password: env('DEMO_PASSWORD', app()->isProduction() ? null : 'VellumStudio!2026'),
+            email: (string) config('demo.studio_email'),
+            password: $this->password('demo.studio_password'),
             isAdmin: false,
         );
     }
 
+    private function password(string $key): ?string
+    {
+        $password = config($key);
+
+        return is_string($password) && $password !== '' ? $password : null;
+    }
+
     private function upsertUser(string $name, string $email, ?string $password, bool $isAdmin): void
     {
-        if ($password === null || $password === '') {
+        if ($password === null) {
             return;
         }
 
         $user = User::firstOrNew(['email' => $email]);
         $user->name = $name;
         $user->password = $password;
-        $user->email_verified_at = $user->email_verified_at ?? now();
+        $user->email_verified_at ??= Carbon::now();
         $user->is_admin = $isAdmin;
         $user->save();
     }

@@ -54,11 +54,17 @@ class PricingService
         }
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function snapshot(): array
     {
         return $this->current()->toArray();
     }
 
+    /**
+     * @param  array<array-key, mixed>  $cached
+     */
     private function isFresh(array $cached): bool
     {
         $fetchedAt = $cached['fetched_at'] ?? null;
@@ -70,11 +76,22 @@ class PricingService
         return now()->diffInSeconds($fetchedAt, true) < (int) config('pixelforge.pricing_ttl', 600);
     }
 
+    /**
+     * @param  array<array-key, mixed>  $cached
+     */
     private function fromCache(array $cached): PricingTable
     {
+        $rates = $cached['rates'] ?? null;
+        $tokens = $cached['tokens'] ?? null;
+        $fetchedAt = $cached['fetched_at'] ?? null;
+
+        if (! is_array($rates) || ! is_array($tokens) || ($fetchedAt !== null && ! is_string($fetchedAt))) {
+            throw PixelforgeException::invalidResponse('Cached pricing is invalid.');
+        }
+
         return PricingTable::fromPayload(
-            ['rates' => $cached['rates'], 'tokens' => $cached['tokens']],
-            $cached['fetched_at'] ?? null,
+            ['rates' => $rates, 'tokens' => $tokens],
+            $fetchedAt,
         );
     }
 }
