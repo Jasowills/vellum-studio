@@ -1,4 +1,6 @@
 <script setup lang="ts">
+defineOptions({ inheritAttrs: false });
+
 import { Head, Link } from '@inertiajs/vue3';
 import { ArrowRight, Coins, Images, Receipt, TriangleAlert } from '@lucide/vue';
 import { computed, ref } from 'vue';
@@ -124,6 +126,10 @@ function barHeight(value: number): string {
     return `${Math.max(6, Math.round((value / maxDaily.value) * 100))}%`;
 }
 
+function exactMoney(nanos: number): string {
+    return `$${(nanos / 1e9).toFixed(9)}`;
+}
+
 function dayAriaLabel(day: UsageDay): string {
     return [
         `${day.label}, ${day.date}.`,
@@ -132,7 +138,7 @@ function dayAriaLabel(day: UsageDay): string {
         `${day.failed} failed.`,
         `${day.active} active.`,
         `${day.charged} settled charges.`,
-        `${day.charge} charged.`,
+        `${exactMoney(day.charge_nanos)} charged.`,
         `${day.tokens.toLocaleString()} tokens.`,
     ].join(' ');
 }
@@ -145,136 +151,119 @@ function selectDay(day: UsageDay): void {
 <template>
     <Head title="Usage" />
 
-    <div class="min-h-svh bg-background text-signal">
+    <div class="min-h-svh overflow-x-clip bg-void text-document">
         <div
-            class="mx-auto max-w-[1440px] space-y-12 px-5 py-10 sm:px-8 sm:py-12 lg:px-12 lg:py-14"
+            class="mx-auto max-w-[1440px] space-y-14 px-5 py-10 sm:px-8 sm:py-12 lg:px-12 lg:py-16"
         >
             <header
-                class="flex flex-col justify-between gap-7 border-b border-line pb-8 lg:flex-row lg:items-end"
+                class="flex flex-col gap-8 border-b border-line pb-9 lg:flex-row lg:items-end lg:justify-between"
             >
-                <div>
-                    <p class="eyebrow flex items-center gap-3">
-                        <span class="h-px w-8 bg-signal" aria-hidden="true" />
-                        01 / Usage — last thirty days
+                <div class="min-w-0">
+                    <p class="vellum-meta flex items-center gap-3">
+                        <span class="h-px w-8 bg-document" aria-hidden="true" />
+                        Usage / last thirty days
                     </p>
                     <h1
-                        class="display-title mt-6 max-w-[14ch] text-[clamp(2.8rem,5.2vw,4.4rem)] text-signal"
+                        class="vellum-display mt-5 max-w-[16ch] text-[clamp(2.6rem,5.4vw,4.25rem)] text-document"
                     >
-                        The
-                        <em class="text-signal-muted not-italic">ledger.</em>
+                        The ledger,
+                        <span class="text-ash">exactly.</span>
                     </h1>
                 </div>
-                <div class="max-w-sm space-y-3 lg:text-right">
-                    <p class="text-sm leading-relaxed text-signal-muted">
+                <div class="max-w-md space-y-3 lg:text-right">
+                    <p class="text-sm leading-relaxed text-ash">
                         Every settled charge, exactly as recorded at completion.
                         Failed generations never appear as charges.
                     </p>
-                    <p
-                        class="ledger text-[0.6rem] tracking-[0.12em] text-signal-faint uppercase"
-                    >
+                    <p class="vellum-meta">
                         {{ formatDate(range.start) }} —
                         {{ formatDate(range.end) }}
                     </p>
                 </div>
             </header>
 
-            <section aria-labelledby="lifetime-title">
+            <section aria-labelledby="lifetime-title" class="space-y-4">
                 <div
-                    class="flex items-baseline justify-between border-b border-line pb-3"
+                    class="flex flex-wrap items-end justify-between gap-3 border-b border-line pb-3"
                 >
-                    <h2 id="lifetime-title" class="eyebrow">
+                    <h2
+                        id="lifetime-title"
+                        class="vellum-title text-xl text-document"
+                    >
                         Lifetime summary
                     </h2>
-                    <p
-                        class="font-mono text-[0.55rem] tracking-[0.12em] text-signal-faint uppercase"
-                    >
-                        All time / account
-                    </p>
+                    <p class="vellum-meta">All time / account</p>
                 </div>
                 <div
-                    class="grid border-x border-b border-line sm:grid-cols-2 lg:grid-cols-4"
+                    class="grid grid-cols-2 gap-px border border-line bg-line lg:grid-cols-4"
                 >
-                    <div
-                        class="border-b border-line-soft p-5 sm:border-r sm:border-b-0 sm:p-6"
-                    >
+                    <div class="bg-surface p-4 sm:p-6">
                         <div class="flex items-center justify-between gap-3">
-                            <p class="eyebrow">Images made</p>
+                            <p class="text-sm text-ash">Images made</p>
                             <Images
-                                class="size-4 text-signal-faint"
+                                class="size-4 text-stone"
                                 aria-hidden="true"
                             />
                         </div>
                         <p
-                            class="ledger mt-5 text-3xl tracking-[-0.04em] text-signal lg:text-4xl"
+                            class="ledger mt-6 text-[1.75rem] leading-none tracking-[-0.04em] text-document sm:text-3xl"
                         >
                             {{ summary.succeeded.toLocaleString() }}
                         </p>
-                        <p
-                            class="ledger mt-2 text-[0.58rem] tracking-[0.08em] text-signal-muted uppercase"
-                        >
+                        <p class="mt-3 text-xs leading-relaxed text-ash">
                             {{ summary.total.toLocaleString() }} attempts ·
                             {{ summary.active.toLocaleString() }} in flight
                         </p>
                     </div>
-                    <div
-                        class="border-b border-line-soft p-5 sm:border-b-0 sm:p-6 lg:border-r"
-                    >
+                    <div class="bg-surface p-4 sm:p-6">
                         <div class="flex items-center justify-between gap-3">
-                            <p class="eyebrow">Charged</p>
+                            <p class="text-sm text-ash">Charged</p>
                             <Coins
-                                class="size-4 text-signal-faint"
+                                class="size-4 text-stone"
                                 aria-hidden="true"
                             />
                         </div>
                         <p
-                            class="ledger mt-5 text-2xl tracking-[-0.04em] text-signal lg:text-3xl"
+                            class="ledger mt-6 text-[1.05rem] leading-none tracking-[-0.04em] text-document sm:text-2xl"
                         >
-                            {{ summary.charge }}
+                            {{ exactMoney(summary.charge_nanos) }}
                         </p>
-                        <p
-                            class="ledger mt-2 text-[0.58rem] tracking-[0.08em] text-signal-muted uppercase"
-                        >
+                        <p class="mt-3 text-xs leading-relaxed text-ash">
                             {{ summary.charged.toLocaleString() }} settled
                             {{ summary.charged === 1 ? 'charge' : 'charges' }}
                         </p>
                     </div>
-                    <div
-                        class="border-b border-line-soft p-5 sm:border-r sm:border-b-0 sm:p-6"
-                    >
+                    <div class="bg-surface p-4 sm:p-6">
                         <div class="flex items-center justify-between gap-3">
-                            <p class="eyebrow">Tokens billed</p>
+                            <p class="text-sm text-ash">Tokens billed</p>
                             <Receipt
-                                class="size-4 text-signal-faint"
+                                class="size-4 text-stone"
                                 aria-hidden="true"
                             />
                         </div>
                         <p
-                            class="ledger mt-5 text-3xl tracking-[-0.04em] text-signal lg:text-4xl"
+                            class="ledger mt-6 text-[1.5rem] leading-none tracking-[-0.04em] text-document sm:text-3xl"
                         >
                             {{ summary.tokens.toLocaleString() }}
                         </p>
-                        <p
-                            class="ledger mt-2 text-[0.58rem] tracking-[0.08em] text-signal-muted uppercase"
-                        >
+                        <p class="mt-3 text-xs leading-relaxed text-ash">
                             all token classes
                         </p>
                     </div>
-                    <div class="p-5 sm:p-6">
+                    <div class="bg-surface p-4 sm:p-6">
                         <div class="flex items-center justify-between gap-3">
-                            <p class="eyebrow">Failures</p>
+                            <p class="text-sm text-ash">Failures</p>
                             <TriangleAlert
-                                class="size-4 text-signal-faint"
+                                class="size-4 text-stone"
                                 aria-hidden="true"
                             />
                         </div>
                         <p
-                            class="ledger mt-5 text-3xl tracking-[-0.04em] text-signal lg:text-4xl"
+                            class="ledger mt-6 text-[1.5rem] leading-none tracking-[-0.04em] text-document sm:text-3xl"
                         >
                             {{ summary.failed.toLocaleString() }}
                         </p>
-                        <p
-                            class="ledger mt-2 text-[0.58rem] tracking-[0.08em] text-signal-muted uppercase"
-                        >
+                        <p class="mt-3 text-xs leading-relaxed text-ash">
                             always free
                         </p>
                     </div>
@@ -283,216 +272,179 @@ function selectDay(day: UsageDay): void {
 
             <section class="space-y-5" aria-labelledby="daily-title">
                 <div
-                    class="flex flex-col justify-between gap-4 border-b border-line pb-5 sm:flex-row sm:items-end"
+                    class="flex flex-col gap-4 border-b border-line pb-5 sm:flex-row sm:items-end sm:justify-between"
                 >
                     <div>
-                        <p class="eyebrow">02 / Daily activity</p>
+                        <p class="vellum-meta">Daily activity</p>
                         <h2
                             id="daily-title"
-                            class="display-title mt-3 text-[1.8rem] tracking-[-0.02em] text-signal sm:text-3xl"
+                            class="vellum-title mt-2 text-2xl text-document sm:text-[1.9rem]"
                         >
                             Thirty days of work
                         </h2>
                     </div>
-                    <p
-                        class="ledger text-[0.6rem] tracking-[0.12em] text-signal-muted uppercase"
-                    >
+                    <p class="vellum-meta">
                         Peak {{ busiest.total.toLocaleString() }} ·
                         {{ busiest.label }}
                     </p>
                 </div>
 
-                <figure class="border border-line bg-background">
+                <figure class="overflow-x-auto border border-line bg-void">
                     <div
-                        class="flex items-center justify-between gap-3 border-b border-line px-3 py-2 font-mono text-[0.55rem] tracking-[0.14em] text-signal-muted uppercase sm:px-4"
+                        class="vellum-meta flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-2.5"
                     >
                         <span>Generations / UTC day</span>
-                        <span class="ledger"
-                            >Scale 0 — {{ maxDaily.toLocaleString() }}</span
-                        >
+                        <span>Scale 0 — {{ maxDaily.toLocaleString() }}</span>
                     </div>
 
-                    <div
-                        v-if="hasWindowActivity"
-                        class="relative h-52 overflow-x-auto sm:h-64"
-                    >
-                        <div
-                            class="pointer-events-none absolute inset-0 min-w-[900px]"
+                    <template v-if="hasWindowActivity">
+                        <div class="relative h-52 min-w-[900px] sm:h-64">
+                            <div
+                                class="pointer-events-none absolute inset-0"
+                                aria-hidden="true"
+                            >
+                                <div
+                                    v-for="tick in chartTicks"
+                                    :key="`grid-${tick.value}`"
+                                    class="absolute inset-x-0 border-t"
+                                    :class="
+                                        tick.value === 0
+                                            ? 'border-edge-strong'
+                                            : 'border-edge'
+                                    "
+                                    :style="{ top: tick.top }"
+                                />
+                                <span
+                                    v-for="tick in chartTicks"
+                                    :key="`tick-${tick.value}`"
+                                    class="ledger absolute right-2 -translate-y-1/2 bg-void px-1 text-[0.6rem] text-ash"
+                                    :style="{ top: tick.top }"
+                                >
+                                    {{ tick.value.toLocaleString() }}
+                                </span>
+                            </div>
+
+                            <div
+                                class="absolute inset-y-0 right-9 left-3 flex min-w-[900px] items-end gap-px pt-3 sm:right-12 sm:left-4 sm:gap-[3px]"
+                                role="group"
+                                aria-label="Daily generation bars. Each bar is focusable and announces all figures for its day."
+                            >
+                                <button
+                                    v-for="day in days"
+                                    :key="day.date"
+                                    type="button"
+                                    class="focus-ring group relative flex h-full min-w-0 flex-1 items-end"
+                                    :aria-label="dayAriaLabel(day)"
+                                    :title="dayAriaLabel(day)"
+                                    @focus="selectDay(day)"
+                                    @click="selectDay(day)"
+                                    @pointerenter="selectDay(day)"
+                                >
+                                    <span
+                                        class="block w-full transition-colors duration-150 motion-reduce:transition-none"
+                                        :class="[
+                                            day.total === 0
+                                                ? 'bg-edge'
+                                                : day.failed > 0 &&
+                                                    day.succeeded === 0
+                                                  ? 'bg-edge-strong'
+                                                  : 'bg-document',
+                                            'group-hover:bg-ash group-focus-visible:bg-ash',
+                                        ]"
+                                        :style="{
+                                            height: barHeight(day.total),
+                                        }"
+                                        aria-hidden="true"
+                                    />
+                                </button>
+                            </div>
+                        </div>
+
+                        <figcaption
+                            class="relative h-8 min-w-[900px] border-t border-edge"
                             aria-hidden="true"
                         >
-                            <div
-                                v-for="tick in chartTicks"
-                                :key="`grid-${tick.value}`"
-                                class="absolute inset-x-0 border-t"
-                                :class="
-                                    tick.value === 0
-                                        ? 'border-line'
-                                        : 'border-line-soft'
-                                "
-                                :style="{ top: tick.top }"
-                            />
                             <span
-                                v-for="tick in chartTicks"
-                                :key="`tick-${tick.value}`"
-                                class="ledger absolute right-1.5 -translate-y-1/2 bg-background px-1 text-[0.5rem] text-signal-faint sm:right-2"
-                                :style="{ top: tick.top }"
+                                v-for="tick in axisTicks"
+                                :key="tick.key"
+                                class="ledger absolute top-2 text-[0.6rem] tracking-[0.06em] whitespace-nowrap text-ash"
+                                :class="[
+                                    tick.mobile ? 'block' : 'hidden sm:block',
+                                    tick.edge === 'start'
+                                        ? 'translate-x-0'
+                                        : tick.edge === 'end'
+                                          ? '-translate-x-full'
+                                          : '-translate-x-1/2',
+                                ]"
+                                :style="{ left: tick.left }"
                             >
-                                {{ tick.value.toLocaleString() }}
+                                {{ tick.label }}
                             </span>
-                        </div>
-
-                        <div
-                            class="absolute inset-y-0 right-9 left-3 flex min-w-[900px] items-end gap-px pt-3 sm:right-12 sm:left-4 sm:gap-[3px]"
-                            role="group"
-                            aria-label="Daily generation bars. Each bar is focusable and announces all figures for its day."
-                        >
-                            <button
-                                v-for="day in days"
-                                :key="day.date"
-                                type="button"
-                                class="focus-ring group relative flex h-full min-w-0 flex-1 items-end"
-                                :aria-label="dayAriaLabel(day)"
-                                :title="dayAriaLabel(day)"
-                                @focus="selectDay(day)"
-                                @click="selectDay(day)"
-                                @pointerenter="selectDay(day)"
-                            >
-                                <span
-                                    class="block w-full transition-colors duration-150 motion-reduce:transition-none"
-                                    :class="[
-                                        day.total === 0
-                                            ? 'bg-line'
-                                            : day.failed > 0 &&
-                                                day.succeeded === 0
-                                              ? 'bg-signal-faint'
-                                              : 'bg-signal',
-                                        'group-hover:bg-signal-muted group-focus-visible:bg-signal-muted',
-                                    ]"
-                                    :style="{ height: barHeight(day.total) }"
-                                    aria-hidden="true"
-                                />
-                            </button>
-                        </div>
-                    </div>
+                        </figcaption>
+                    </template>
 
                     <div
                         v-else
                         class="flex h-52 flex-col items-center justify-center gap-3 px-6 text-center sm:h-64"
                     >
-                        <p
-                            class="font-display text-xl tracking-[-0.02em] text-signal"
-                        >
+                        <p class="vellum-title text-xl text-document">
                             No activity in this window.
                         </p>
-                        <p
-                            class="max-w-md text-sm leading-relaxed text-signal-muted"
-                        >
+                        <p class="max-w-md text-sm leading-relaxed text-ash">
                             {{ emptyMessage }}
                         </p>
                     </div>
-
-                    <figcaption
-                        class="relative h-8 border-t border-line-soft"
-                        aria-hidden="true"
-                    >
-                        <span
-                            v-for="tick in axisTicks"
-                            :key="tick.key"
-                            class="absolute top-2 font-mono text-[0.5rem] tracking-[0.06em] whitespace-nowrap text-signal-faint"
-                            :class="[
-                                tick.mobile ? 'block' : 'hidden sm:block',
-                                tick.edge === 'start'
-                                    ? 'translate-x-0'
-                                    : tick.edge === 'end'
-                                      ? '-translate-x-full'
-                                      : '-translate-x-1/2',
-                            ]"
-                            :style="{ left: tick.left }"
-                        >
-                            {{ tick.label }}
-                        </span>
-                    </figcaption>
                 </figure>
 
-                <div class="border border-line bg-paper">
+                <div class="border border-line bg-surface">
                     <div
-                        class="flex flex-wrap items-center justify-between gap-2 border-b border-line px-3 py-2 font-mono text-[0.55rem] tracking-[0.14em] text-signal-muted uppercase sm:px-4"
+                        class="vellum-meta flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-2.5"
                     >
                         <span>Readout / {{ activeDay.label }}</span>
-                        <span class="ledger text-signal-faint">{{
-                            activeDay.date
-                        }}</span>
+                        <span>{{ activeDay.date }}</span>
                     </div>
                     <dl
-                        class="grid grid-cols-2 gap-px bg-line-soft sm:grid-cols-4 lg:grid-cols-7"
+                        class="grid grid-cols-2 gap-px bg-edge sm:grid-cols-4 lg:grid-cols-7"
                     >
-                        <div class="bg-paper px-3 py-3 sm:px-4">
-                            <dt
-                                class="font-mono text-[0.52rem] tracking-[0.12em] text-signal-faint uppercase"
-                            >
-                                Total
-                            </dt>
-                            <dd class="ledger mt-1.5 text-sm text-signal">
+                        <div class="bg-surface px-4 py-3">
+                            <dt class="vellum-meta text-[0.58rem]">Total</dt>
+                            <dd class="ledger mt-2 text-sm text-document">
                                 {{ activeDay.total.toLocaleString() }}
                             </dd>
                         </div>
-                        <div class="bg-paper px-3 py-3 sm:px-4">
-                            <dt
-                                class="font-mono text-[0.52rem] tracking-[0.12em] text-signal-faint uppercase"
-                            >
-                                Made
-                            </dt>
-                            <dd class="ledger mt-1.5 text-sm text-signal">
+                        <div class="bg-surface px-4 py-3">
+                            <dt class="vellum-meta text-[0.58rem]">Made</dt>
+                            <dd class="ledger mt-2 text-sm text-document">
                                 {{ activeDay.succeeded.toLocaleString() }}
                             </dd>
                         </div>
-                        <div class="bg-paper px-3 py-3 sm:px-4">
-                            <dt
-                                class="font-mono text-[0.52rem] tracking-[0.12em] text-signal-faint uppercase"
-                            >
-                                Failed
-                            </dt>
-                            <dd class="ledger mt-1.5 text-sm text-signal">
+                        <div class="bg-surface px-4 py-3">
+                            <dt class="vellum-meta text-[0.58rem]">Failed</dt>
+                            <dd class="ledger mt-2 text-sm text-document">
                                 {{ activeDay.failed.toLocaleString() }}
                             </dd>
                         </div>
-                        <div class="bg-paper px-3 py-3 sm:px-4">
-                            <dt
-                                class="font-mono text-[0.52rem] tracking-[0.12em] text-signal-faint uppercase"
-                            >
-                                Active
-                            </dt>
-                            <dd class="ledger mt-1.5 text-sm text-signal">
+                        <div class="bg-surface px-4 py-3">
+                            <dt class="vellum-meta text-[0.58rem]">Active</dt>
+                            <dd class="ledger mt-2 text-sm text-document">
                                 {{ activeDay.active.toLocaleString() }}
                             </dd>
                         </div>
-                        <div class="bg-paper px-3 py-3 sm:px-4">
-                            <dt
-                                class="font-mono text-[0.52rem] tracking-[0.12em] text-signal-faint uppercase"
-                            >
-                                Charges
-                            </dt>
-                            <dd class="ledger mt-1.5 text-sm text-signal">
+                        <div class="bg-surface px-4 py-3">
+                            <dt class="vellum-meta text-[0.58rem]">Charges</dt>
+                            <dd class="ledger mt-2 text-sm text-document">
                                 {{ activeDay.charged.toLocaleString() }}
                             </dd>
                         </div>
-                        <div class="bg-paper px-3 py-3 sm:px-4">
-                            <dt
-                                class="font-mono text-[0.52rem] tracking-[0.12em] text-signal-faint uppercase"
-                            >
-                                Amount
-                            </dt>
-                            <dd class="ledger mt-1.5 text-sm text-signal">
-                                {{ activeDay.charge }}
+                        <div class="bg-surface px-4 py-3">
+                            <dt class="vellum-meta text-[0.58rem]">Amount</dt>
+                            <dd class="ledger mt-2 text-sm text-document">
+                                {{ exactMoney(activeDay.charge_nanos) }}
                             </dd>
                         </div>
-                        <div class="bg-paper px-3 py-3 sm:px-4">
-                            <dt
-                                class="font-mono text-[0.52rem] tracking-[0.12em] text-signal-faint uppercase"
-                            >
-                                Tokens
-                            </dt>
-                            <dd class="ledger mt-1.5 text-sm text-signal">
+                        <div class="bg-surface px-4 py-3">
+                            <dt class="vellum-meta text-[0.58rem]">Tokens</dt>
+                            <dd class="ledger mt-2 text-sm text-document">
                                 {{ activeDay.tokens.toLocaleString() }}
                             </dd>
                         </div>
@@ -500,74 +452,81 @@ function selectDay(day: UsageDay): void {
                 </div>
             </section>
 
-            <section class="space-y-3" aria-labelledby="daily-table-title">
+            <section class="space-y-4" aria-labelledby="daily-table-title">
                 <div
-                    class="flex items-baseline justify-between border-b border-line pb-3"
+                    class="flex flex-wrap items-end justify-between gap-3 border-b border-line pb-3"
                 >
-                    <h2 id="daily-table-title" class="eyebrow">
+                    <h2
+                        id="daily-table-title"
+                        class="vellum-title text-xl text-document"
+                    >
                         Daily figures
                     </h2>
-                    <p
-                        class="ledger text-[0.55rem] tracking-[0.12em] text-signal-faint uppercase"
-                    >
-                        {{ days.length }} days / UTC
-                    </p>
+                    <p class="vellum-meta">{{ days.length }} days / UTC</p>
                 </div>
 
                 <template v-if="days.length > 0">
-                    <div class="hidden border border-line bg-paper lg:block">
+                    <div
+                        class="focus-ring overflow-x-auto border border-line bg-surface"
+                        role="region"
+                        aria-label="Daily figures table, scroll horizontally"
+                        tabindex="0"
+                    >
                         <table
-                            class="w-full border-collapse text-left font-mono text-[0.62rem] tabular-nums"
+                            class="w-full min-w-[720px] border-collapse text-left"
                         >
+                            <caption class="sr-only">
+                                Daily generation attempts, settled charges and
+                                tokens, grouped by UTC day. Amounts are exact
+                                USD.
+                            </caption>
                             <thead>
-                                <tr
-                                    class="border-b border-line text-[0.52rem] tracking-[0.12em] text-signal-muted uppercase"
-                                >
+                                <tr class="vellum-meta border-b border-line">
                                     <th
                                         scope="col"
-                                        class="px-3 py-2.5 font-medium"
+                                        class="px-3 py-3 font-normal"
                                     >
                                         Day
                                     </th>
                                     <th
                                         scope="col"
-                                        class="px-3 py-2.5 text-right font-medium"
+                                        class="px-3 py-3 text-right font-normal"
                                     >
                                         Total
                                     </th>
                                     <th
                                         scope="col"
-                                        class="px-3 py-2.5 text-right font-medium"
+                                        class="px-3 py-3 text-right font-normal"
                                     >
                                         Made
                                     </th>
                                     <th
                                         scope="col"
-                                        class="px-3 py-2.5 text-right font-medium"
+                                        class="px-3 py-3 text-right font-normal"
                                     >
                                         Failed
                                     </th>
                                     <th
                                         scope="col"
-                                        class="px-3 py-2.5 text-right font-medium"
+                                        class="px-3 py-3 text-right font-normal"
                                     >
                                         Active
                                     </th>
                                     <th
                                         scope="col"
-                                        class="px-3 py-2.5 text-right font-medium"
+                                        class="px-3 py-3 text-right font-normal"
                                     >
                                         Charges
                                     </th>
                                     <th
                                         scope="col"
-                                        class="px-3 py-2.5 text-right font-medium"
+                                        class="px-3 py-3 text-right font-normal"
                                     >
                                         Amount
                                     </th>
                                     <th
                                         scope="col"
-                                        class="px-3 py-2.5 text-right font-medium"
+                                        class="px-3 py-3 text-right font-normal"
                                     >
                                         Tokens
                                     </th>
@@ -577,49 +536,49 @@ function selectDay(day: UsageDay): void {
                                 <tr
                                     v-for="day in days"
                                     :key="day.date"
-                                    class="border-b border-line-soft last:border-0"
+                                    class="border-b border-edge last:border-0"
                                 >
                                     <th
                                         scope="row"
-                                        class="px-3 py-2 font-normal text-signal"
+                                        class="sticky left-0 bg-surface px-3 py-2.5 font-normal text-document"
                                     >
                                         {{ day.label }}
-                                        <span class="ml-2 text-signal-faint">{{
+                                        <span class="ml-2 text-ash">{{
                                             day.date
                                         }}</span>
                                     </th>
                                     <td
-                                        class="px-3 py-2 text-right text-signal"
+                                        class="ledger px-3 py-2.5 text-right text-sm text-document"
                                     >
                                         {{ day.total.toLocaleString() }}
                                     </td>
                                     <td
-                                        class="px-3 py-2 text-right text-signal-muted"
+                                        class="ledger px-3 py-2.5 text-right text-sm text-ash"
                                     >
                                         {{ day.succeeded.toLocaleString() }}
                                     </td>
                                     <td
-                                        class="px-3 py-2 text-right text-signal-muted"
+                                        class="ledger px-3 py-2.5 text-right text-sm text-ash"
                                     >
                                         {{ day.failed.toLocaleString() }}
                                     </td>
                                     <td
-                                        class="px-3 py-2 text-right text-signal-muted"
+                                        class="ledger px-3 py-2.5 text-right text-sm text-ash"
                                     >
                                         {{ day.active.toLocaleString() }}
                                     </td>
                                     <td
-                                        class="px-3 py-2 text-right text-signal-muted"
+                                        class="ledger px-3 py-2.5 text-right text-sm text-ash"
                                     >
                                         {{ day.charged.toLocaleString() }}
                                     </td>
                                     <td
-                                        class="px-3 py-2 text-right text-signal"
+                                        class="ledger px-3 py-2.5 text-right text-sm text-document"
                                     >
-                                        {{ day.charge }}
+                                        {{ exactMoney(day.charge_nanos) }}
                                     </td>
                                     <td
-                                        class="px-3 py-2 text-right text-signal-muted"
+                                        class="ledger px-3 py-2.5 text-right text-sm text-ash"
                                     >
                                         {{ day.tokens.toLocaleString() }}
                                     </td>
@@ -627,104 +586,11 @@ function selectDay(day: UsageDay): void {
                             </tbody>
                         </table>
                     </div>
-
-                    <ul class="border border-line bg-paper lg:hidden">
-                        <li
-                            v-for="day in days"
-                            :key="day.date"
-                            class="border-b border-line-soft p-3 last:border-0 sm:p-4"
-                        >
-                            <div
-                                class="flex items-center justify-between gap-3 font-mono text-[0.6rem] uppercase"
-                            >
-                                <span class="tracking-[0.12em] text-signal">{{
-                                    day.label
-                                }}</span>
-                                <span class="ledger text-signal-faint">{{
-                                    day.date
-                                }}</span>
-                            </div>
-                            <dl
-                                class="mt-3 grid grid-cols-4 gap-x-2 gap-y-3 font-mono text-[0.6rem] tabular-nums"
-                            >
-                                <div>
-                                    <dt
-                                        class="text-[0.5rem] tracking-[0.1em] text-signal-faint uppercase"
-                                    >
-                                        Total
-                                    </dt>
-                                    <dd class="mt-1 text-signal">
-                                        {{ day.total.toLocaleString() }}
-                                    </dd>
-                                </div>
-                                <div>
-                                    <dt
-                                        class="text-[0.5rem] tracking-[0.1em] text-signal-faint uppercase"
-                                    >
-                                        Made
-                                    </dt>
-                                    <dd class="mt-1 text-signal">
-                                        {{ day.succeeded.toLocaleString() }}
-                                    </dd>
-                                </div>
-                                <div>
-                                    <dt
-                                        class="text-[0.5rem] tracking-[0.1em] text-signal-faint uppercase"
-                                    >
-                                        Failed
-                                    </dt>
-                                    <dd class="mt-1 text-signal">
-                                        {{ day.failed.toLocaleString() }}
-                                    </dd>
-                                </div>
-                                <div>
-                                    <dt
-                                        class="text-[0.5rem] tracking-[0.1em] text-signal-faint uppercase"
-                                    >
-                                        Active
-                                    </dt>
-                                    <dd class="mt-1 text-signal">
-                                        {{ day.active.toLocaleString() }}
-                                    </dd>
-                                </div>
-                                <div>
-                                    <dt
-                                        class="text-[0.5rem] tracking-[0.1em] text-signal-faint uppercase"
-                                    >
-                                        Charges
-                                    </dt>
-                                    <dd class="mt-1 text-signal">
-                                        {{ day.charged.toLocaleString() }}
-                                    </dd>
-                                </div>
-                                <div>
-                                    <dt
-                                        class="text-[0.5rem] tracking-[0.1em] text-signal-faint uppercase"
-                                    >
-                                        Amount
-                                    </dt>
-                                    <dd class="mt-1 text-signal">
-                                        {{ day.charge }}
-                                    </dd>
-                                </div>
-                                <div class="col-span-2">
-                                    <dt
-                                        class="text-[0.5rem] tracking-[0.1em] text-signal-faint uppercase"
-                                    >
-                                        Tokens
-                                    </dt>
-                                    <dd class="mt-1 text-signal">
-                                        {{ day.tokens.toLocaleString() }}
-                                    </dd>
-                                </div>
-                            </dl>
-                        </li>
-                    </ul>
                 </template>
 
                 <p
                     v-else
-                    class="border border-dashed border-line px-5 py-6 text-sm text-signal-muted"
+                    class="border border-dashed border-line bg-surface px-5 py-6 text-sm leading-relaxed text-ash"
                 >
                     No daily records were returned for this period.
                 </p>
@@ -735,50 +601,59 @@ function selectDay(day: UsageDay): void {
                     class="flex flex-wrap items-end justify-between gap-3 border-b border-line pb-4"
                 >
                     <div>
-                        <p class="eyebrow">03 / Settled charges</p>
+                        <p class="vellum-meta">Settled charges</p>
                         <h2
                             id="recent-charges"
-                            class="display-title mt-2 text-2xl tracking-[-0.02em] text-signal sm:text-3xl"
+                            class="vellum-title mt-2 text-2xl text-document sm:text-[1.9rem]"
                         >
                             Last entries
                         </h2>
                     </div>
                     <Link
                         href="/library"
-                        class="link-underline pb-1 font-mono text-[0.6rem] tracking-[0.12em] text-signal uppercase"
+                        class="focus-ring link-underline vellum-meta pb-1 text-document"
                     >
                         Open the library
                     </Link>
                 </div>
 
                 <template v-if="recent.length > 0">
-                    <div class="hidden border border-line bg-paper lg:block">
-                        <table class="w-full border-collapse text-left text-sm">
+                    <div
+                        class="focus-ring overflow-x-auto border border-line bg-surface"
+                        role="region"
+                        aria-label="Settled charges table, scroll horizontally"
+                        tabindex="0"
+                    >
+                        <table
+                            class="w-full min-w-[600px] border-collapse text-left"
+                        >
+                            <caption class="sr-only">
+                                Recent settled charges with plate, settlement
+                                time, tokens and exact amount charged.
+                            </caption>
                             <thead>
-                                <tr
-                                    class="border-b border-line font-mono text-[0.52rem] tracking-[0.12em] text-signal-muted uppercase"
-                                >
+                                <tr class="vellum-meta border-b border-line">
                                     <th
                                         scope="col"
-                                        class="px-4 py-3 font-medium"
+                                        class="px-4 py-3 font-normal"
                                     >
                                         Plate
                                     </th>
                                     <th
                                         scope="col"
-                                        class="px-4 py-3 font-medium"
+                                        class="px-4 py-3 font-normal"
                                     >
                                         Settled
                                     </th>
                                     <th
                                         scope="col"
-                                        class="px-4 py-3 text-right font-medium"
+                                        class="px-4 py-3 text-right font-normal"
                                     >
                                         Tokens
                                     </th>
                                     <th
                                         scope="col"
-                                        class="px-4 py-3 text-right font-medium"
+                                        class="px-4 py-3 text-right font-normal"
                                     >
                                         Charged
                                     </th>
@@ -791,34 +666,34 @@ function selectDay(day: UsageDay): void {
                                 <tr
                                     v-for="entry in recent"
                                     :key="entry.id"
-                                    class="border-b border-line-soft transition-colors last:border-0 hover:bg-paper-deep motion-reduce:transition-none"
+                                    class="border-b border-edge transition-colors last:border-0 hover:bg-elevated motion-reduce:transition-none"
                                 >
                                     <td class="max-w-[26rem] px-4 py-3">
                                         <Link
                                             :href="`/generations/${entry.id}`"
-                                            class="line-clamp-1 font-display text-[0.98rem] text-signal hover:text-signal-muted"
+                                            class="focus-ring line-clamp-1 font-display text-[0.95rem] text-document hover:text-ash"
                                             >{{ entry.prompt }}</Link
                                         >
                                     </td>
                                     <td
-                                        class="ledger px-4 py-3 text-[0.6rem] text-signal-muted"
+                                        class="ledger px-4 py-3 text-xs text-ash"
                                     >
                                         {{ formatDateTime(entry.settled_at) }}
                                     </td>
                                     <td
-                                        class="ledger px-4 py-3 text-right text-[0.65rem] text-signal-muted"
+                                        class="ledger px-4 py-3 text-right text-xs text-ash"
                                     >
                                         {{ entry.tokens.toLocaleString() }}
                                     </td>
                                     <td
-                                        class="ledger px-4 py-3 text-right text-[0.68rem] text-signal"
+                                        class="ledger px-4 py-3 text-right text-xs text-document"
                                     >
-                                        {{ entry.charge }}
+                                        {{ exactMoney(entry.charge_nanos) }}
                                     </td>
                                     <td class="px-4 py-3">
                                         <Link
                                             :href="`/generations/${entry.id}`"
-                                            class="focus-ring inline-flex text-signal-muted hover:text-signal"
+                                            class="focus-ring inline-flex text-ash hover:text-document"
                                             :aria-label="`Open ${entry.id}`"
                                         >
                                             <ArrowRight
@@ -831,84 +706,23 @@ function selectDay(day: UsageDay): void {
                             </tbody>
                         </table>
                     </div>
-
-                    <ul class="border border-line bg-paper lg:hidden">
-                        <li
-                            v-for="entry in recent"
-                            :key="entry.id"
-                            class="border-b border-line-soft p-4 last:border-0"
-                        >
-                            <div class="flex items-start justify-between gap-4">
-                                <Link
-                                    :href="`/generations/${entry.id}`"
-                                    class="line-clamp-2 font-display text-[1rem] leading-snug text-signal hover:text-signal-muted"
-                                    >{{ entry.prompt }}</Link
-                                >
-                                <Link
-                                    :href="`/generations/${entry.id}`"
-                                    class="focus-ring inline-flex shrink-0 text-signal-muted hover:text-signal"
-                                    :aria-label="`Open ${entry.id}`"
-                                >
-                                    <ArrowRight
-                                        class="size-4"
-                                        aria-hidden="true"
-                                    />
-                                </Link>
-                            </div>
-                            <p
-                                class="ledger mt-2 text-[0.6rem] text-signal-faint"
-                            >
-                                {{ formatDateTime(entry.settled_at) }}
-                            </p>
-                            <dl
-                                class="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 font-mono text-[0.62rem] tabular-nums"
-                            >
-                                <div
-                                    class="flex items-center justify-between gap-2 border-b border-line-soft pb-2"
-                                >
-                                    <dt
-                                        class="text-[0.52rem] tracking-[0.1em] text-signal-faint uppercase"
-                                    >
-                                        Tokens
-                                    </dt>
-                                    <dd class="text-signal-muted">
-                                        {{ entry.tokens.toLocaleString() }}
-                                    </dd>
-                                </div>
-                                <div
-                                    class="flex items-center justify-between gap-2 border-b border-line-soft pb-2"
-                                >
-                                    <dt
-                                        class="text-[0.52rem] tracking-[0.1em] text-signal-faint uppercase"
-                                    >
-                                        Charged
-                                    </dt>
-                                    <dd class="text-signal">
-                                        {{ entry.charge }}
-                                    </dd>
-                                </div>
-                            </dl>
-                        </li>
-                    </ul>
                 </template>
 
                 <div
                     v-else
-                    class="border border-dashed border-line bg-paper px-6 py-10 text-center"
+                    class="border border-line bg-surface px-6 py-10 text-center"
                 >
-                    <p
-                        class="font-display text-xl tracking-[-0.02em] text-signal"
-                    >
+                    <p class="vellum-title text-xl text-document">
                         No charges yet.
                     </p>
                     <p
-                        class="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-signal-muted"
+                        class="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-ash"
                     >
                         A charge is recorded only after an image is delivered.
                     </p>
                     <Link
                         href="/studio"
-                        class="link-underline mt-4 inline-block font-mono text-[0.6rem] tracking-[0.12em] text-signal uppercase"
+                        class="focus-ring link-underline vellum-meta mt-4 inline-block text-document"
                     >
                         Make your first image →
                     </Link>
@@ -916,7 +730,7 @@ function selectDay(day: UsageDay): void {
             </section>
 
             <p
-                class="max-w-2xl border-t border-line pt-5 text-[0.65rem] leading-relaxed text-signal-muted"
+                class="max-w-2xl border-t border-line pt-5 text-xs leading-relaxed text-ash"
             >
                 Figures reflect completed generations and their immutable charge
                 records. Active generations are excluded until the provider

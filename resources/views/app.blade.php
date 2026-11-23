@@ -4,15 +4,15 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
-        <meta name="theme-color" content="#050505">
+        <meta name="theme-color" content="#000000">
         <meta
             name="description"
-            content="Vellum is a monochrome image studio. Compose an intention, see the signal, and keep the image."
+            content="Vellum is an intelligent creative instrument for turning imagination into imagery. Turn words into worlds."
         >
 
         <style>
             html {
-                background-color: #050505;
+                background-color: #000000;
             }
         </style>
 

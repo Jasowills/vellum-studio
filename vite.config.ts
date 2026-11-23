@@ -12,14 +12,13 @@ export default defineConfig({
             input: ['resources/css/app.css', 'resources/js/app.ts'],
             refresh: true,
             fonts: [
+                bunny('Sora', {
+                    weights: [400, 500, 600, 700],
+                    variable: '--font-display',
+                }),
                 bunny('Geist', {
                     weights: [400, 500, 600, 700],
                     variable: '--font-sans',
-                }),
-                bunny('Instrument Serif', {
-                    weights: [400],
-                    styles: ['normal', 'italic'],
-                    variable: '--font-display',
                 }),
                 bunny('Geist Mono', {
                     weights: [400, 500],

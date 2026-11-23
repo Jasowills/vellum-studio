@@ -16,24 +16,24 @@ withDefaults(
 <template>
     <span
         class="inline-flex flex-col leading-none"
-        :class="inverted ? 'text-signal-invert' : 'text-signal'"
+        :class="inverted ? 'text-void' : 'text-document'"
     >
         <span
-            class="font-sans font-semibold uppercase"
+            class="font-display font-semibold uppercase"
             :class="{
-                'text-[0.72rem] tracking-[0.28em]': size === 'sm',
-                'text-[0.9rem] tracking-[0.24em]': size === 'md',
-                'text-[1.05rem] tracking-[0.22em]': size === 'lg',
+                'text-[0.75rem] tracking-[0.16em]': size === 'sm',
+                'text-[0.9rem] tracking-[0.17em]': size === 'md',
+                'text-[1.05rem] tracking-[0.18em]': size === 'lg',
             }"
         >
             Vellum
         </span>
         <span
             v-if="showDescriptor"
-            class="mt-1.5 font-mono text-[0.5rem] tracking-[0.24em] uppercase"
-            :class="inverted ? 'text-signal-invert/55' : 'text-signal-muted'"
+            class="vellum-meta mt-1.5 hidden sm:block"
+            :class="inverted ? 'text-void/60' : 'text-stone'"
         >
-            Signal studio
+            Creative instrument
         </span>
     </span>
 </template>

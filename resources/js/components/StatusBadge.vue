@@ -7,21 +7,12 @@ defineProps<{
 </script>
 
 <template>
-    <span
-        class="inline-flex items-center gap-2 border px-2 py-1 font-mono text-[0.6rem] font-medium tracking-[0.14em] uppercase"
-        :class="{
-            'border-dashed border-line text-signal-muted': tone === 'waiting',
-            'border-signal-line text-signal': tone === 'working',
-            'border-2 border-signal text-signal': tone === 'success',
-            'border-2 border-dashed border-signal text-signal':
-                tone === 'danger',
-        }"
-    >
+    <span class="inline-flex min-w-0 items-center gap-2">
         <span
-            class="relative inline-block size-2 shrink-0"
+            class="inline-block size-1.5 shrink-0"
             :class="{
-                'border border-signal-faint': tone === 'waiting',
-                'bg-signal':
+                'border border-stone bg-transparent': tone === 'waiting',
+                'bg-document':
                     tone === 'working' ||
                     tone === 'success' ||
                     tone === 'danger',
@@ -29,12 +20,12 @@ defineProps<{
                 'animate-breathe': pulse || tone === 'working',
             }"
             aria-hidden="true"
+        />
+        <span
+            class="min-w-0 truncate font-mono text-[0.625rem] leading-none tracking-[0.06em]"
+            :class="tone === 'waiting' ? 'text-ash' : 'text-document'"
         >
-            <span
-                v-if="tone === 'success'"
-                class="absolute inset-[2px] bg-signal-invert"
-            />
+            {{ label }}
         </span>
-        {{ label }}
     </span>
 </template>

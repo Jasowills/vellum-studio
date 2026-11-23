@@ -1,4 +1,6 @@
 <script setup lang="ts">
+defineOptions({ inheritAttrs: false });
+
 import { Head, Link, router } from '@inertiajs/vue3';
 import {
     Activity,
@@ -214,31 +216,31 @@ onBeforeUnmount(() => {
 <template>
     <Head title="Library / Archive" />
 
-    <div class="space-y-9 lg:space-y-11">
+    <div class="min-w-0 space-y-8 pb-10 text-document lg:space-y-10">
         <header
-            class="flex flex-col gap-7 border-b border-line pb-8 lg:flex-row lg:items-end lg:justify-between"
+            class="flex min-w-0 flex-col gap-5 border-b border-line pb-6 lg:flex-row lg:items-end lg:justify-between"
         >
             <div class="min-w-0">
-                <p class="eyebrow flex items-center gap-3">
-                    <span class="h-px w-8 bg-signal" aria-hidden="true" />
+                <p class="vellum-meta flex items-center gap-3">
+                    <span class="h-px w-8 bg-document" aria-hidden="true" />
                     Archive / Index
                 </p>
                 <h1
-                    class="display-title mt-5 text-[clamp(2.6rem,5.4vw,4.5rem)] text-signal"
+                    class="vellum-display mt-4 text-[clamp(2rem,4.6vw,3.4rem)] text-document"
                 >
                     Every plate,
-                    <span class="text-signal-faint">kept.</span>
+                    <span class="text-stone">kept.</span>
                 </h1>
             </div>
 
-            <div class="max-w-sm space-y-4 lg:text-right">
-                <p class="text-sm leading-relaxed text-signal-muted">
+            <div class="max-w-sm min-w-0 space-y-3 lg:text-right">
+                <p class="text-sm leading-relaxed text-ash">
                     A private record of every plate made here, indexed exactly
                     as it was submitted.
                 </p>
                 <Link
                     href="/studio"
-                    class="focus-ring link-underline inline-flex items-center gap-2 font-mono text-[0.62rem] tracking-[0.14em] text-signal uppercase"
+                    class="focus-ring link-underline inline-flex items-center gap-2 font-sans text-[0.78rem] text-document"
                 >
                     New generation
                     <ArrowRight class="size-3.5" aria-hidden="true" />
@@ -247,84 +249,75 @@ onBeforeUnmount(() => {
         </header>
 
         <section
-            class="grid grid-cols-3 gap-px border border-line bg-line"
+            class="flex flex-wrap items-baseline gap-x-6 gap-y-2 border-b border-line pb-3"
             aria-label="Archive counts"
         >
-            <div class="bg-paper px-3 py-3 sm:px-5 sm:py-4">
-                <p class="eyebrow text-[0.55rem]">Total</p>
-                <p class="ledger mt-2 text-xl text-signal sm:text-2xl">
+            <div class="flex items-baseline gap-2">
+                <span class="vellum-meta">Total</span>
+                <span class="ledger text-base text-document">
                     {{ generations.total.toLocaleString() }}
-                </p>
+                </span>
             </div>
-            <div class="bg-paper px-3 py-3 sm:px-5 sm:py-4">
-                <p class="eyebrow text-[0.55rem]">On page</p>
-                <p class="ledger mt-2 text-xl text-signal sm:text-2xl">
+            <div class="flex items-baseline gap-2">
+                <span class="vellum-meta">On page</span>
+                <span class="ledger text-base text-document">
                     {{ String(generations.data.length).padStart(2, '0') }}
-                </p>
+                </span>
             </div>
-            <div class="bg-paper px-3 py-3 sm:px-5 sm:py-4">
-                <p class="eyebrow text-[0.55rem]">Page</p>
-                <p class="ledger mt-2 text-xl text-signal sm:text-2xl">
+            <div class="flex items-baseline gap-2">
+                <span class="vellum-meta">Page</span>
+                <span class="ledger text-base text-document">
                     {{ generations.current_page
-                    }}<span class="text-signal-faint"
+                    }}<span class="text-stone"
                         >/{{ generations.last_page }}</span
                     >
-                </p>
+                </span>
             </div>
         </section>
 
         <section
             v-if="hasActiveGenerations"
-            class="border border-line bg-paper-deep px-4 py-3 sm:px-5"
+            class="flex flex-col gap-2 border-b border-line py-3 sm:flex-row sm:items-center sm:justify-between"
             aria-label="Generations currently in progress on this page"
             aria-live="polite"
         >
-            <div
-                class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
-            >
-                <div class="flex items-center gap-2.5">
-                    <Activity
-                        class="size-3.5 text-signal-muted motion-reduce:animate-none"
-                        aria-hidden="true"
-                    />
-                    <span
-                        class="font-mono text-[0.6rem] tracking-[0.16em] text-signal uppercase"
-                        >In progress / this page</span
-                    >
-                </div>
-                <ul class="flex flex-wrap items-center gap-x-5 gap-y-2">
-                    <li
-                        v-for="status in activeStatuses"
-                        :key="status.value"
-                        class="flex items-baseline gap-2"
-                    >
-                        <span class="ledger text-sm text-signal">{{
-                            String(status.count).padStart(2, '0')
-                        }}</span>
-                        <span
-                            class="font-mono text-[0.6rem] tracking-[0.12em] text-signal-muted uppercase"
-                            >{{ status.label }}</span
-                        >
-                    </li>
-                </ul>
-                <span
-                    class="font-mono text-[0.58rem] tracking-[0.08em] text-signal-faint uppercase"
-                    >Checks pause in hidden tabs</span
-                >
+            <div class="flex items-center gap-2">
+                <Activity
+                    class="size-3.5 text-document motion-reduce:animate-none"
+                    aria-hidden="true"
+                />
+                <span class="vellum-meta text-document">
+                    In progress / this page
+                </span>
             </div>
+            <ul class="flex flex-wrap items-center gap-x-5 gap-y-1">
+                <li
+                    v-for="status in activeStatuses"
+                    :key="status.value"
+                    class="flex items-baseline gap-2"
+                >
+                    <span class="ledger text-sm text-document">
+                        {{ String(status.count).padStart(2, '0') }}
+                    </span>
+                    <span class="vellum-meta">{{ status.label }}</span>
+                </li>
+            </ul>
+            <span class="vellum-meta text-stone"
+                >Checks pause in hidden tabs</span
+            >
         </section>
 
-        <section class="space-y-4" aria-label="Archive controls">
+        <section class="min-w-0 space-y-4" aria-label="Archive controls">
             <form
-                class="flex flex-col gap-3 sm:flex-row"
+                class="flex min-w-0 flex-col gap-2 sm:flex-row"
                 @submit.prevent="search"
             >
-                <div class="relative flex-1">
+                <div class="relative min-w-0 flex-1">
                     <label for="library-search" class="sr-only"
                         >Search prompts</label
                     >
                     <Search
-                        class="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-signal-faint"
+                        class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-stone"
                         aria-hidden="true"
                     />
                     <input
@@ -332,11 +325,11 @@ onBeforeUnmount(() => {
                         v-model="query"
                         type="search"
                         placeholder="Search the prompt archive…"
-                        class="h-11 w-full border border-line bg-paper pr-28 pl-10 font-sans text-sm text-signal placeholder:text-signal-faint focus:border-signal focus:outline-none"
+                        class="vellum-input h-10 w-full pr-20 pl-9 font-sans text-sm text-document"
                     />
                     <button
                         type="submit"
-                        class="focus-ring absolute top-1 right-1 bottom-1 border border-signal bg-signal px-4 font-mono text-[0.6rem] tracking-[0.14em] text-signal-invert uppercase transition-colors hover:bg-signal-muted"
+                        class="focus-ring absolute top-1 right-1 bottom-1 border border-document bg-document px-3 font-sans text-xs text-void transition-colors hover:bg-transparent hover:text-document"
                     >
                         Search
                     </button>
@@ -344,7 +337,7 @@ onBeforeUnmount(() => {
 
                 <button
                     type="button"
-                    class="focus-ring inline-flex h-11 shrink-0 items-center justify-center gap-2 border border-line bg-paper px-4 font-mono text-[0.62rem] tracking-[0.14em] text-signal-muted uppercase transition-colors hover:border-signal hover:text-signal"
+                    class="focus-ring vellum-button-quiet inline-flex h-10 shrink-0 items-center justify-center gap-2 px-3 font-sans text-xs text-document"
                     :aria-expanded="showFilters"
                     aria-controls="library-filters"
                     @click="showFilters = !showFilters"
@@ -353,7 +346,7 @@ onBeforeUnmount(() => {
                     Filters
                     <span
                         v-if="activeFilters > 0"
-                        class="inline-flex min-w-5 items-center justify-center border border-signal px-1 py-0.5 font-mono text-[0.55rem] text-signal"
+                        class="ledger border-l border-line pl-2 text-document"
                     >
                         {{ activeFilters }}
                     </span>
@@ -363,16 +356,16 @@ onBeforeUnmount(() => {
             <div
                 v-if="showFilters"
                 id="library-filters"
-                class="grid gap-px border border-line bg-line sm:grid-cols-3"
+                class="grid min-w-0 grid-cols-1 gap-3 border border-line bg-void p-3 sm:grid-cols-3"
             >
-                <div class="bg-paper p-4">
-                    <label for="filter-status" class="eyebrow text-[0.55rem]"
+                <div class="min-w-0">
+                    <label for="filter-status" class="vellum-meta"
                         >Status</label
                     >
                     <select
                         id="filter-status"
                         :value="filters.status"
-                        class="mt-2 h-10 w-full border border-line bg-background px-2.5 font-sans text-sm text-signal focus:border-signal focus:outline-none"
+                        class="vellum-input mt-1.5 h-9 w-full px-2 font-sans text-sm text-document"
                         @change="
                             apply({
                                 status:
@@ -392,14 +385,14 @@ onBeforeUnmount(() => {
                     </select>
                 </div>
 
-                <div class="bg-paper p-4">
-                    <label for="filter-quality" class="eyebrow text-[0.55rem]"
+                <div class="min-w-0">
+                    <label for="filter-quality" class="vellum-meta"
                         >Quality</label
                     >
                     <select
                         id="filter-quality"
                         :value="filters.quality"
-                        class="mt-2 h-10 w-full border border-line bg-background px-2.5 font-sans text-sm text-signal focus:border-signal focus:outline-none"
+                        class="vellum-input mt-1.5 h-9 w-full px-2 font-sans text-sm text-document"
                         @change="
                             apply({
                                 quality:
@@ -419,14 +412,14 @@ onBeforeUnmount(() => {
                     </select>
                 </div>
 
-                <div class="bg-paper p-4">
-                    <label for="filter-size" class="eyebrow text-[0.55rem]"
+                <div class="min-w-0">
+                    <label for="filter-size" class="vellum-meta"
                         >Proportion</label
                     >
                     <select
                         id="filter-size"
                         :value="filters.size"
-                        class="mt-2 h-10 w-full border border-line bg-background px-2.5 font-sans text-sm text-signal focus:border-signal focus:outline-none"
+                        class="vellum-input mt-1.5 h-9 w-full px-2 font-sans text-sm text-document"
                         @change="
                             apply({
                                 size:
@@ -443,17 +436,15 @@ onBeforeUnmount(() => {
                 </div>
 
                 <div
-                    class="flex flex-wrap items-center justify-between gap-3 bg-background px-4 py-3 sm:col-span-3"
+                    class="flex min-w-0 flex-wrap items-center justify-between gap-3 sm:col-span-3 sm:border-t sm:border-line sm:pt-3"
                 >
-                    <p
-                        class="font-mono text-[0.58rem] tracking-[0.1em] text-signal-faint uppercase"
-                    >
+                    <p class="vellum-meta text-stone">
                         Changes apply to the index immediately
                     </p>
                     <button
                         v-if="activeFilters > 0"
                         type="button"
-                        class="focus-ring inline-flex items-center gap-1.5 font-mono text-[0.6rem] tracking-[0.12em] text-signal-muted uppercase transition-colors hover:text-signal"
+                        class="focus-ring inline-flex items-center gap-1.5 font-sans text-xs text-ash transition-colors hover:text-document"
                         @click="clearAll"
                     >
                         <X class="size-3" aria-hidden="true" />
@@ -464,19 +455,19 @@ onBeforeUnmount(() => {
 
             <div
                 v-if="activeChips.length > 0"
-                class="flex flex-wrap items-center gap-2"
+                class="flex min-w-0 flex-wrap items-center gap-2"
                 aria-label="Applied filters"
             >
-                <span class="eyebrow mr-1 text-[0.55rem]">Applied</span>
+                <span class="vellum-meta mr-1">Applied</span>
                 <span
                     v-for="chip in activeChips"
                     :key="chip.key"
-                    class="inline-flex items-center gap-2 border border-line bg-paper py-1 pr-1 pl-2.5 text-xs text-signal-muted"
+                    class="inline-flex min-w-0 items-center gap-2 border border-line px-2 py-1 font-mono text-[0.65rem] text-ash"
                 >
-                    <span>{{ chip.label }}</span>
+                    <span class="min-w-0 truncate">{{ chip.label }}</span>
                     <button
                         type="button"
-                        class="focus-ring inline-flex size-5 items-center justify-center border border-line-soft text-signal-muted transition-colors hover:border-signal hover:text-signal"
+                        class="focus-ring inline-flex size-4 shrink-0 items-center justify-center text-stone transition-colors hover:text-document"
                         :aria-label="`Clear ${chip.key} filter`"
                         @click="clearChip(chip.key)"
                     >
@@ -486,7 +477,7 @@ onBeforeUnmount(() => {
                 <button
                     v-if="activeFilters > 1"
                     type="button"
-                    class="focus-ring font-mono text-[0.58rem] tracking-[0.12em] text-signal-faint uppercase transition-colors hover:text-signal"
+                    class="focus-ring font-sans text-xs text-stone transition-colors hover:text-document"
                     @click="clearAll"
                 >
                     Reset all
@@ -496,26 +487,26 @@ onBeforeUnmount(() => {
 
         <div
             v-if="loadError"
-            class="flex flex-col gap-3 border border-signal bg-paper-deep px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+            class="flex min-w-0 flex-col gap-3 border-l-2 border-document py-2 pl-4 sm:flex-row sm:items-center sm:justify-between"
             role="alert"
         >
-            <div class="flex items-start gap-3">
+            <div class="flex min-w-0 items-start gap-3">
                 <AlertTriangle
-                    class="mt-0.5 size-4 text-signal"
+                    class="mt-0.5 size-4 shrink-0 text-document"
                     aria-hidden="true"
                 />
-                <div>
-                    <p class="text-xs font-medium text-signal">
+                <div class="min-w-0">
+                    <p class="text-xs font-medium text-document">
                         The index could not be updated.
                     </p>
-                    <p class="mt-0.5 text-xs text-signal-muted">
+                    <p class="mt-0.5 text-xs leading-relaxed text-ash">
                         {{ loadError }}
                     </p>
                 </div>
             </div>
             <button
                 type="button"
-                class="focus-ring inline-flex shrink-0 items-center gap-2 border border-line px-3 py-1.5 font-mono text-[0.6rem] tracking-[0.12em] text-signal uppercase transition-colors hover:border-signal"
+                class="focus-ring inline-flex shrink-0 items-center gap-2 border border-line px-3 py-1.5 font-sans text-xs text-document transition-colors hover:border-document"
                 @click="apply()"
             >
                 <RefreshCw class="size-3" aria-hidden="true" />
@@ -525,12 +516,12 @@ onBeforeUnmount(() => {
 
         <p
             v-if="refreshing"
-            class="flex items-center gap-2 font-mono text-[0.6rem] tracking-[0.14em] text-signal-muted uppercase"
+            class="flex items-center gap-2 font-mono text-[0.6rem] tracking-[0.08em] text-ash"
             role="status"
             aria-live="polite"
         >
             <span
-                class="status-dot animate-breathe bg-signal"
+                class="status-dot animate-breathe bg-document"
                 aria-hidden="true"
             />
             Updating index
@@ -538,7 +529,7 @@ onBeforeUnmount(() => {
 
         <div
             v-if="generations.data.length > 0"
-            class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+            class="grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
             :aria-busy="refreshing"
         >
             <GenerationCard
@@ -550,42 +541,40 @@ onBeforeUnmount(() => {
 
         <div
             v-else-if="refreshing"
-            class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+            class="grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
             aria-busy="true"
             aria-label="Loading archive"
         >
             <div
                 v-for="index in 8"
                 :key="index"
-                class="border border-line bg-paper"
+                class="border border-line bg-void"
             >
-                <div class="aspect-square border-b border-line bg-paper-deep" />
-                <div class="space-y-2 p-4">
-                    <div class="h-3 w-3/4 bg-paper-deep" />
-                    <div class="h-3 w-1/2 bg-paper-deep" />
+                <div class="aspect-square border-b border-line bg-elevated" />
+                <div class="space-y-2 p-3">
+                    <div class="h-3 w-3/4 bg-elevated" />
+                    <div class="h-3 w-1/2 bg-elevated" />
                 </div>
             </div>
         </div>
 
         <div
             v-else
-            class="flex flex-col items-center justify-center border border-line bg-paper px-6 py-20 text-center"
+            class="flex min-w-0 flex-col items-center border-y border-line px-4 py-16 text-center"
         >
             <span
-                class="font-display text-5xl text-signal-faint"
+                class="font-display text-4xl leading-none text-stone"
                 aria-hidden="true"
                 >×</span
             >
-            <h2
-                class="mt-4 font-display text-3xl tracking-[-0.03em] text-signal"
-            >
+            <h2 class="vellum-title mt-4 text-2xl text-document">
                 {{
                     activeFilters > 0
                         ? 'No plates match those filters.'
                         : 'The archive is empty.'
                 }}
             </h2>
-            <p class="mt-3 max-w-sm text-sm leading-relaxed text-signal-muted">
+            <p class="mt-3 max-w-sm text-sm leading-relaxed text-ash">
                 {{
                     activeFilters > 0
                         ? 'Broaden the search, or reset the index to see every plate.'
@@ -595,7 +584,7 @@ onBeforeUnmount(() => {
             <button
                 v-if="activeFilters > 0"
                 type="button"
-                class="focus-ring mt-6 inline-flex items-center gap-2 border border-signal px-4 py-2 font-mono text-[0.62rem] tracking-[0.12em] text-signal uppercase transition-colors hover:bg-signal hover:text-signal-invert"
+                class="focus-ring vellum-button-quiet mt-6 px-4 py-2 font-sans text-xs text-document"
                 @click="clearAll"
             >
                 <X class="size-3.5" aria-hidden="true" />
@@ -604,7 +593,7 @@ onBeforeUnmount(() => {
             <Link
                 v-else
                 href="/studio"
-                class="focus-ring mt-6 inline-flex items-center gap-2 border border-signal bg-signal px-4 py-2 font-mono text-[0.62rem] tracking-[0.12em] text-signal-invert uppercase transition-colors hover:bg-signal-muted"
+                class="focus-ring vellum-button mt-6 px-4 py-2 font-sans text-xs"
             >
                 Make the first plate
                 <ArrowRight class="size-3.5" aria-hidden="true" />
@@ -613,22 +602,21 @@ onBeforeUnmount(() => {
 
         <nav
             v-if="generations.last_page > 1"
-            class="flex flex-col gap-4 border-t border-line pt-5 lg:flex-row lg:items-center lg:justify-between"
+            class="flex min-w-0 flex-col gap-4 border-t border-line pt-5"
             aria-label="Library pages"
         >
-            <p
-                class="font-mono text-[0.6rem] tracking-[0.1em] text-signal-faint uppercase"
-            >
-                Showing {{ generations.from ?? 0 }}–{{ generations.to ?? 0 }} of
+            <p class="vellum-meta text-stone">
+                Showing {{ generations.from ?? 0 }}–{{ generations.to ?? 0 }}
+                of
                 {{ generations.total.toLocaleString() }}
             </p>
 
-            <div class="flex flex-wrap items-center gap-2">
+            <div class="flex max-w-full min-w-0 flex-wrap items-center gap-2">
                 <Link
                     v-if="generations.prev_page_url"
                     :href="generations.prev_page_url"
                     preserve-scroll
-                    class="focus-ring inline-flex items-center gap-1.5 border border-line px-3 py-1.5 font-mono text-[0.6rem] tracking-[0.12em] text-signal-muted uppercase transition-colors hover:border-signal hover:text-signal"
+                    class="focus-ring vellum-button-quiet inline-flex items-center gap-1.5 px-3 py-1.5 font-sans text-xs text-document"
                     aria-label="Go to previous page"
                 >
                     <ArrowLeft class="size-3" aria-hidden="true" />
@@ -636,7 +624,7 @@ onBeforeUnmount(() => {
                 </Link>
                 <span
                     v-else
-                    class="inline-flex items-center gap-1.5 border border-line-soft px-3 py-1.5 font-mono text-[0.6rem] tracking-[0.12em] text-signal-faint uppercase"
+                    class="inline-flex items-center gap-1.5 border border-line px-3 py-1.5 font-sans text-xs text-stone"
                     aria-disabled="true"
                 >
                     <ArrowLeft class="size-3" aria-hidden="true" />
@@ -655,8 +643,8 @@ onBeforeUnmount(() => {
                         class="focus-ring inline-flex size-8 items-center justify-center border font-mono text-[0.62rem] transition-colors"
                         :class="
                             link.active
-                                ? 'border-signal bg-signal text-signal-invert'
-                                : 'border-line text-signal-muted hover:border-signal hover:text-signal'
+                                ? 'border-document bg-document text-void'
+                                : 'border-line text-ash transition-colors hover:border-document hover:text-document'
                         "
                         :aria-label="`Go to page ${link.label}`"
                     >
@@ -664,7 +652,7 @@ onBeforeUnmount(() => {
                     </Link>
                     <span
                         v-else
-                        class="inline-flex size-8 items-center justify-center border border-line-soft font-mono text-[0.62rem] text-signal-faint"
+                        class="inline-flex size-8 items-center justify-center border border-line font-mono text-[0.62rem] text-stone"
                         aria-hidden="true"
                         >{{ link.label }}</span
                     >
@@ -674,7 +662,7 @@ onBeforeUnmount(() => {
                     v-if="generations.next_page_url"
                     :href="generations.next_page_url"
                     preserve-scroll
-                    class="focus-ring inline-flex items-center gap-1.5 border border-line px-3 py-1.5 font-mono text-[0.6rem] tracking-[0.12em] text-signal-muted uppercase transition-colors hover:border-signal hover:text-signal"
+                    class="focus-ring vellum-button-quiet inline-flex items-center gap-1.5 px-3 py-1.5 font-sans text-xs text-document"
                     aria-label="Go to next page"
                 >
                     Next
@@ -682,7 +670,7 @@ onBeforeUnmount(() => {
                 </Link>
                 <span
                     v-else
-                    class="inline-flex items-center gap-1.5 border border-line-soft px-3 py-1.5 font-mono text-[0.6rem] tracking-[0.12em] text-signal-faint uppercase"
+                    class="inline-flex items-center gap-1.5 border border-line px-3 py-1.5 font-sans text-xs text-stone"
                     aria-disabled="true"
                 >
                     Next

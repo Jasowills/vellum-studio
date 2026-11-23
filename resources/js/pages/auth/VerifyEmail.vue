@@ -26,9 +26,12 @@ defineProps<{
     <div
         v-if="status === 'verification-link-sent'"
         role="status"
-        class="mb-6 flex items-start gap-3 border border-line bg-paper px-4 py-3 text-left text-sm leading-relaxed text-signal"
+        class="mb-6 flex items-start gap-3 border border-line bg-raised px-4 py-3 text-left text-sm leading-relaxed text-document"
     >
-        <Check class="mt-0.5 size-4 shrink-0 text-signal" aria-hidden="true" />
+        <Check
+            class="mt-0.5 size-4 shrink-0 text-document"
+            aria-hidden="true"
+        />
         <span>
             A new verification link has been sent to the email address you
             provided during registration.
@@ -37,13 +40,13 @@ defineProps<{
 
     <Form
         v-bind="send.form()"
-        class="grid gap-6 border-t border-line pt-6 text-center"
+        class="grid gap-4 border-t border-line pt-6 text-left"
         v-slot="{ processing }"
     >
         <Button
             type="submit"
             variant="secondary"
-            :class="'h-11 w-full border border-line font-mono text-[0.72rem] tracking-[0.16em] text-signal uppercase hover:border-signal focus-visible:ring-signal disabled:opacity-60'"
+            class="vellum-button-quiet focus-ring h-11 w-full rounded-none bg-transparent text-sm"
             :disabled="processing"
             :aria-busy="processing"
         >
@@ -54,7 +57,7 @@ defineProps<{
         <TextLink
             :href="logout()"
             as="button"
-            class="mx-auto block font-mono text-[0.68rem] tracking-[0.16em] text-signal uppercase"
+            class="vellum-meta focus-ring mx-auto block !text-ash hover:!text-document"
         >
             Log out
         </TextLink>

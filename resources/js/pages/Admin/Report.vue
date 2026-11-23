@@ -1,4 +1,6 @@
 <script setup lang="ts">
+defineOptions({ inheritAttrs: false });
+
 import { Head, Link, router } from '@inertiajs/vue3';
 import {
     ArrowUpRight,
@@ -177,32 +179,32 @@ function refresh(): void {
 <template>
     <Head title="Operator's ledger" />
 
-    <div class="min-h-svh bg-background text-signal">
+    <div class="min-h-svh overflow-x-clip bg-void text-document">
         <div
-            class="mx-auto max-w-[1440px] space-y-11 px-5 py-10 sm:px-8 sm:py-12 lg:px-12 lg:py-14"
+            class="mx-auto max-w-[1440px] space-y-12 px-5 py-10 sm:px-8 sm:py-12 lg:px-12 lg:py-16"
             :aria-busy="refreshing"
         >
             <header
-                class="flex flex-col justify-between gap-7 border-b border-line pb-8 lg:flex-row lg:items-end"
+                class="flex flex-col gap-8 border-b border-line pb-9 lg:flex-row lg:items-end lg:justify-between"
             >
-                <div>
-                    <p class="eyebrow flex items-center gap-3">
+                <div class="min-w-0">
+                    <p class="vellum-meta flex items-center gap-3">
                         <ShieldCheck
-                            class="size-3.5 text-signal"
+                            class="size-3.5 text-document"
                             aria-hidden="true"
                         />
-                        01 / Operator — reconciliation
+                        Reconciliation / operator
                     </p>
                     <h1
-                        class="display-title mt-6 max-w-[16ch] text-[clamp(2.8rem,5.2vw,4.4rem)] text-signal"
+                        class="vellum-display mt-5 max-w-[18ch] text-[clamp(2.6rem,5.4vw,4.25rem)] text-document"
                     >
                         The studio
-                        <em class="text-signal-muted not-italic">books.</em>
+                        <span class="text-ash">books.</span>
                     </h1>
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
                     <div
-                        class="inline-flex border border-line bg-paper"
+                        class="inline-flex border border-line bg-surface"
                         role="group"
                         aria-label="Reconciliation range"
                     >
@@ -210,11 +212,11 @@ function refresh(): void {
                             v-for="days in [7, 14, 30, 92]"
                             :key="days"
                             type="button"
-                            class="focus-ring px-3 py-2 font-mono text-[0.58rem] tracking-[0.08em] uppercase transition-colors motion-reduce:transition-none"
+                            class="focus-ring vellum-meta px-3 py-2 transition-colors motion-reduce:transition-none"
                             :class="
                                 range.days === days
-                                    ? 'bg-signal text-signal-invert'
-                                    : 'text-signal-muted hover:bg-paper-deep hover:text-signal'
+                                    ? 'bg-document text-void'
+                                    : 'text-ash hover:bg-elevated hover:text-document'
                             "
                             :aria-pressed="range.days === days"
                             @click="loadDays(days)"
@@ -224,7 +226,7 @@ function refresh(): void {
                     </div>
                     <button
                         type="button"
-                        class="focus-ring inline-flex items-center gap-2 border border-line bg-paper px-3 py-2 font-mono text-[0.58rem] tracking-[0.08em] text-signal-muted uppercase transition-colors hover:border-signal hover:text-signal motion-reduce:transition-none"
+                        class="focus-ring vellum-meta inline-flex items-center gap-2 border border-line bg-surface px-3 py-2 text-ash transition-colors hover:border-document hover:text-document motion-reduce:transition-none"
                         @click="refresh"
                     >
                         <RefreshCw
@@ -239,55 +241,55 @@ function refresh(): void {
 
             <div
                 v-if="error"
-                class="flex items-start gap-3 border border-l-2 border-signal border-l-signal bg-paper-deep px-4 py-3 text-sm leading-relaxed text-signal"
+                class="border border-l-2 border-line border-l-document bg-surface px-4 py-3"
                 role="alert"
             >
-                <TriangleAlert
-                    class="mt-0.5 size-4 shrink-0"
-                    aria-hidden="true"
-                />
-                <div>
-                    <p
-                        class="font-mono text-[0.55rem] tracking-[0.14em] text-signal-muted uppercase"
-                    >
-                        Provider unavailable
-                    </p>
-                    <p class="mt-1">{{ error }}</p>
-                    <p class="mt-1 text-xs text-signal-muted">
-                        Lifetime figures and settled charges below are still
-                        from the local ledger.
-                    </p>
+                <div class="flex items-start gap-3">
+                    <TriangleAlert
+                        class="mt-0.5 size-4 shrink-0 text-document"
+                        aria-hidden="true"
+                    />
+                    <div>
+                        <p class="vellum-meta text-document">
+                            Provider unavailable
+                        </p>
+                        <p class="mt-1 text-sm leading-relaxed text-document">
+                            {{ error }}
+                        </p>
+                        <p class="mt-1 text-xs leading-relaxed text-ash">
+                            Lifetime figures and settled charges below are still
+                            from the local ledger.
+                        </p>
+                    </div>
                 </div>
             </div>
 
             <section
                 v-if="report"
-                class="border bg-paper"
+                class="border border-line bg-surface"
                 :class="
                     report.matches
-                        ? 'border-l-2 border-line border-l-signal'
-                        : 'border-dashed border-signal'
+                        ? 'border-l-2 border-l-document'
+                        : 'border-l-4 border-dashed border-l-document'
                 "
                 :aria-label="`Reconciliation status: ${statusLabel}`"
             >
                 <div
-                    class="flex flex-wrap items-start justify-between gap-4 p-5 sm:p-6"
+                    class="flex flex-col gap-5 p-5 sm:p-6 lg:flex-row lg:items-start lg:justify-between"
                 >
-                    <div class="flex items-start gap-3">
+                    <div class="flex min-w-0 items-start gap-3">
                         <CircleCheck
                             v-if="report.matches"
-                            class="mt-0.5 size-5 shrink-0 text-signal"
+                            class="mt-0.5 size-5 shrink-0 text-document"
                             aria-hidden="true"
                         />
                         <TriangleAlert
                             v-else
-                            class="mt-0.5 size-5 shrink-0 text-signal"
+                            class="mt-0.5 size-5 shrink-0 text-document"
                             aria-hidden="true"
                         />
-                        <div>
-                            <p
-                                class="font-mono text-[0.55rem] tracking-[0.16em] text-signal-muted uppercase"
-                            >
+                        <div class="min-w-0">
+                            <p class="vellum-meta">
                                 {{ statusLabel }} /
                                 {{ report.differences.length }}
                                 {{
@@ -298,7 +300,7 @@ function refresh(): void {
                                 differing
                             </p>
                             <p
-                                class="mt-2 font-display text-xl tracking-[-0.02em] text-signal sm:text-2xl"
+                                class="vellum-title mt-2 text-xl text-document sm:text-2xl"
                             >
                                 {{
                                     report.matches
@@ -307,7 +309,7 @@ function refresh(): void {
                                 }}
                             </p>
                             <p
-                                class="mt-2 max-w-2xl text-xs leading-relaxed text-signal-muted"
+                                class="mt-2 max-w-2xl text-xs leading-relaxed text-ash"
                             >
                                 {{
                                     report.matches
@@ -317,9 +319,7 @@ function refresh(): void {
                             </p>
                         </div>
                     </div>
-                    <p
-                        class="ledger text-[0.58rem] tracking-[0.1em] text-signal-faint uppercase"
-                    >
+                    <p class="vellum-meta shrink-0">
                         {{ formatDate(report.start_date) }} —
                         {{ formatDate(report.end_date) }}
                     </p>
@@ -328,15 +328,11 @@ function refresh(): void {
 
             <div
                 v-else-if="!error"
-                class="border border-dashed border-line bg-paper px-5 py-6"
+                class="border border-dashed border-line bg-surface px-5 py-6"
                 role="status"
             >
-                <p
-                    class="font-mono text-[0.55rem] tracking-[0.16em] text-signal-muted uppercase"
-                >
-                    UNAVAILABLE / NO REPORT
-                </p>
-                <p class="mt-2 text-sm leading-relaxed text-signal">
+                <p class="vellum-meta">UNAVAILABLE / NO REPORT</p>
+                <p class="mt-2 text-sm leading-relaxed text-document">
                     No reconciliation data is available for this range. Select
                     another range or refresh to request the provider report
                     again.
@@ -344,90 +340,88 @@ function refresh(): void {
             </div>
 
             <template v-if="report">
-                <section aria-label="Totals comparison">
+                <section aria-label="Totals comparison" class="space-y-4">
                     <div
-                        class="flex items-baseline justify-between border-b border-line pb-3"
+                        class="flex flex-wrap items-end justify-between gap-3 border-b border-line pb-3"
                     >
-                        <h2 class="eyebrow">02 / Totals comparison</h2>
-                        <p
-                            class="ledger text-[0.55rem] tracking-[0.12em] text-signal-faint uppercase"
-                        >
-                            USD / exact
-                        </p>
+                        <h2 class="vellum-title text-xl text-document">
+                            Totals comparison
+                        </h2>
+                        <p class="vellum-meta">USD / exact</p>
                     </div>
                     <div
-                        class="grid border-x border-b border-line lg:grid-cols-2"
+                        class="grid gap-px border border-line bg-line lg:grid-cols-2"
                     >
-                        <div
-                            class="border-b border-line-soft p-5 sm:p-6 lg:border-r lg:border-b-0"
-                        >
+                        <div class="bg-surface p-5 sm:p-6">
                             <div
-                                class="flex items-center justify-between gap-3"
+                                class="flex flex-wrap items-center justify-between gap-3"
                             >
-                                <p class="eyebrow">Pixelforge says</p>
-                                <p
-                                    class="font-mono text-[0.55rem] tracking-[0.12em] text-signal-faint uppercase"
-                                >
-                                    Provider
+                                <p class="text-sm text-document">
+                                    Pixelforge says
                                 </p>
+                                <p class="vellum-meta">Provider</p>
                             </div>
                             <p
-                                class="ledger mt-5 text-2xl tracking-[-0.04em] text-signal lg:text-3xl"
+                                class="ledger mt-6 text-xl tracking-[-0.04em] text-document sm:text-2xl lg:text-3xl"
                             >
                                 {{ report.provider.cost }}
                             </p>
-                            <dl
-                                class="mt-6 grid grid-cols-2 gap-x-4 gap-y-3 font-mono text-[0.62rem] tabular-nums"
-                            >
-                                <div class="border-t border-line-soft pt-2">
-                                    <dt class="text-signal-faint">
-                                        Generations
-                                    </dt>
-                                    <dd class="mt-0.5 text-signal">
+                            <dl class="mt-6 grid grid-cols-2 gap-x-4 gap-y-3">
+                                <div class="border-t border-edge pt-2">
+                                    <dt class="vellum-meta">Generations</dt>
+                                    <dd
+                                        class="ledger mt-1 text-sm text-document"
+                                    >
                                         {{
                                             report.provider.generations.toLocaleString()
                                         }}
                                     </dd>
                                 </div>
-                                <div class="border-t border-line-soft pt-2">
-                                    <dt class="text-signal-faint">Tokens</dt>
-                                    <dd class="mt-0.5 text-signal">
+                                <div class="border-t border-edge pt-2">
+                                    <dt class="vellum-meta">Tokens</dt>
+                                    <dd
+                                        class="ledger mt-1 text-sm text-document"
+                                    >
                                         {{
                                             report.provider.total_tokens.toLocaleString()
                                         }}
                                     </dd>
                                 </div>
-                                <div class="border-t border-line-soft pt-2">
-                                    <dt class="text-signal-faint">
-                                        Input text
-                                    </dt>
-                                    <dd class="mt-0.5 text-signal">
+                                <div class="border-t border-edge pt-2">
+                                    <dt class="vellum-meta">Input text</dt>
+                                    <dd
+                                        class="ledger mt-1 text-sm text-document"
+                                    >
                                         {{
                                             report.provider.input_text_tokens.toLocaleString()
                                         }}
                                     </dd>
                                 </div>
-                                <div class="border-t border-line-soft pt-2">
-                                    <dt class="text-signal-faint">
-                                        Input images
-                                    </dt>
-                                    <dd class="mt-0.5 text-signal">
+                                <div class="border-t border-edge pt-2">
+                                    <dt class="vellum-meta">Input images</dt>
+                                    <dd
+                                        class="ledger mt-1 text-sm text-document"
+                                    >
                                         {{
                                             report.provider.input_image_tokens.toLocaleString()
                                         }}
                                     </dd>
                                 </div>
-                                <div class="border-t border-line-soft pt-2">
-                                    <dt class="text-signal-faint">Output</dt>
-                                    <dd class="mt-0.5 text-signal">
+                                <div class="border-t border-edge pt-2">
+                                    <dt class="vellum-meta">Output</dt>
+                                    <dd
+                                        class="ledger mt-1 text-sm text-document"
+                                    >
                                         {{
                                             report.provider.output_tokens.toLocaleString()
                                         }}
                                     </dd>
                                 </div>
-                                <div class="border-t border-line-soft pt-2">
-                                    <dt class="text-signal-faint">Reasoning</dt>
-                                    <dd class="mt-0.5 text-signal">
+                                <div class="border-t border-edge pt-2">
+                                    <dt class="vellum-meta">Reasoning</dt>
+                                    <dd
+                                        class="ledger mt-1 text-sm text-document"
+                                    >
                                         {{
                                             report.provider.reasoning_tokens.toLocaleString()
                                         }}
@@ -436,74 +430,76 @@ function refresh(): void {
                             </dl>
                         </div>
 
-                        <div class="p-5 sm:p-6">
+                        <div class="bg-surface p-5 sm:p-6">
                             <div
-                                class="flex items-center justify-between gap-3"
+                                class="flex flex-wrap items-center justify-between gap-3"
                             >
-                                <p class="eyebrow">Vellum ledger says</p>
-                                <p
-                                    class="font-mono text-[0.55rem] tracking-[0.12em] text-signal-faint uppercase"
-                                >
-                                    Local
+                                <p class="text-sm text-document">
+                                    Vellum ledger says
                                 </p>
+                                <p class="vellum-meta">Local</p>
                             </div>
                             <p
-                                class="ledger mt-5 text-2xl tracking-[-0.04em] text-signal lg:text-3xl"
+                                class="ledger mt-6 text-xl tracking-[-0.04em] text-document sm:text-2xl lg:text-3xl"
                             >
                                 {{ report.local.cost }}
                             </p>
-                            <dl
-                                class="mt-6 grid grid-cols-2 gap-x-4 gap-y-3 font-mono text-[0.62rem] tabular-nums"
-                            >
-                                <div class="border-t border-line-soft pt-2">
-                                    <dt class="text-signal-faint">
-                                        Generations
-                                    </dt>
-                                    <dd class="mt-0.5 text-signal">
+                            <dl class="mt-6 grid grid-cols-2 gap-x-4 gap-y-3">
+                                <div class="border-t border-edge pt-2">
+                                    <dt class="vellum-meta">Generations</dt>
+                                    <dd
+                                        class="ledger mt-1 text-sm text-document"
+                                    >
                                         {{
                                             report.local.generations.toLocaleString()
                                         }}
                                     </dd>
                                 </div>
-                                <div class="border-t border-line-soft pt-2">
-                                    <dt class="text-signal-faint">Tokens</dt>
-                                    <dd class="mt-0.5 text-signal">
+                                <div class="border-t border-edge pt-2">
+                                    <dt class="vellum-meta">Tokens</dt>
+                                    <dd
+                                        class="ledger mt-1 text-sm text-document"
+                                    >
                                         {{
                                             report.local.total_tokens.toLocaleString()
                                         }}
                                     </dd>
                                 </div>
-                                <div class="border-t border-line-soft pt-2">
-                                    <dt class="text-signal-faint">
-                                        Input text
-                                    </dt>
-                                    <dd class="mt-0.5 text-signal">
+                                <div class="border-t border-edge pt-2">
+                                    <dt class="vellum-meta">Input text</dt>
+                                    <dd
+                                        class="ledger mt-1 text-sm text-document"
+                                    >
                                         {{
                                             report.local.input_text_tokens.toLocaleString()
                                         }}
                                     </dd>
                                 </div>
-                                <div class="border-t border-line-soft pt-2">
-                                    <dt class="text-signal-faint">
-                                        Input images
-                                    </dt>
-                                    <dd class="mt-0.5 text-signal">
+                                <div class="border-t border-edge pt-2">
+                                    <dt class="vellum-meta">Input images</dt>
+                                    <dd
+                                        class="ledger mt-1 text-sm text-document"
+                                    >
                                         {{
                                             report.local.input_image_tokens.toLocaleString()
                                         }}
                                     </dd>
                                 </div>
-                                <div class="border-t border-line-soft pt-2">
-                                    <dt class="text-signal-faint">Output</dt>
-                                    <dd class="mt-0.5 text-signal">
+                                <div class="border-t border-edge pt-2">
+                                    <dt class="vellum-meta">Output</dt>
+                                    <dd
+                                        class="ledger mt-1 text-sm text-document"
+                                    >
                                         {{
                                             report.local.output_tokens.toLocaleString()
                                         }}
                                     </dd>
                                 </div>
-                                <div class="border-t border-line-soft pt-2">
-                                    <dt class="text-signal-faint">Reasoning</dt>
-                                    <dd class="mt-0.5 text-signal">
+                                <div class="border-t border-edge pt-2">
+                                    <dt class="vellum-meta">Reasoning</dt>
+                                    <dd
+                                        class="ledger mt-1 text-sm text-document"
+                                    >
                                         {{
                                             report.local.reasoning_tokens.toLocaleString()
                                         }}
@@ -519,17 +515,17 @@ function refresh(): void {
                         class="flex flex-wrap items-end justify-between gap-3 border-b border-line pb-4"
                     >
                         <div>
-                            <p class="eyebrow">03 / Day by day</p>
+                            <p class="vellum-meta">Day by day</p>
                             <h2
                                 id="differences-title"
-                                class="display-title mt-2 text-2xl tracking-[-0.02em] text-signal sm:text-3xl"
+                                class="vellum-title mt-2 text-2xl text-document sm:text-[1.9rem]"
                             >
                                 {{ showAllDays ? 'Every day' : 'Differences' }}
                             </h2>
                         </div>
                         <button
                             type="button"
-                            class="focus-ring pb-1 font-mono text-[0.58rem] tracking-[0.1em] text-signal-muted uppercase hover:text-signal"
+                            class="focus-ring vellum-meta pb-1 text-document transition-colors hover:text-ash motion-reduce:transition-none"
                             :aria-pressed="showAllDays"
                             @click="showAllDays = !showAllDays"
                         >
@@ -543,28 +539,31 @@ function refresh(): void {
 
                     <div
                         v-if="daysToShow.length === 0"
-                        class="flex items-start gap-3 border border-l-2 border-line border-l-signal bg-paper px-5 py-6 text-sm text-signal"
+                        class="flex items-start gap-3 border border-l-2 border-line border-l-document bg-surface px-5 py-6"
                     >
                         <CircleCheck
-                            class="mt-0.5 size-4 shrink-0"
+                            class="mt-0.5 size-4 shrink-0 text-document"
                             aria-hidden="true"
                         />
                         <div>
+                            <p class="vellum-meta">MATCH / NO ROWS</p>
                             <p
-                                class="font-mono text-[0.55rem] tracking-[0.14em] text-signal-muted uppercase"
+                                class="mt-1 text-sm leading-relaxed text-document"
                             >
-                                MATCH / NO ROWS
+                                {{ emptyDifferencesMessage }}
                             </p>
-                            <p class="mt-1">{{ emptyDifferencesMessage }}</p>
                         </div>
                     </div>
 
                     <template v-else>
                         <div
-                            class="hidden border border-line bg-paper lg:block"
+                            class="focus-ring overflow-x-auto border border-line bg-surface"
+                            role="region"
+                            aria-label="Per-day reconciliation table, scroll horizontally"
+                            tabindex="0"
                         >
                             <table
-                                class="w-full border-collapse text-left font-mono text-[0.62rem] tabular-nums"
+                                class="w-full min-w-[760px] border-collapse text-left"
                             >
                                 <caption class="sr-only">
                                     Per-day provider usage versus the local
@@ -572,47 +571,47 @@ function refresh(): void {
                                 </caption>
                                 <thead>
                                     <tr
-                                        class="border-b border-line text-[0.52rem] tracking-[0.12em] text-signal-muted uppercase"
+                                        class="vellum-meta border-b border-line"
                                     >
                                         <th
                                             scope="col"
-                                            class="px-3 py-2.5 font-medium"
+                                            class="px-3 py-3 font-normal"
                                         >
                                             Date
                                         </th>
                                         <th
                                             scope="col"
-                                            class="px-3 py-2.5 font-medium"
+                                            class="px-3 py-3 font-normal"
                                         >
                                             Status
                                         </th>
                                         <th
                                             scope="col"
-                                            class="px-3 py-2.5 text-right font-medium"
+                                            class="px-3 py-3 text-right font-normal"
                                         >
                                             Provider
                                         </th>
                                         <th
                                             scope="col"
-                                            class="px-3 py-2.5 text-right font-medium"
+                                            class="px-3 py-3 text-right font-normal"
                                         >
                                             Local
                                         </th>
                                         <th
                                             scope="col"
-                                            class="px-3 py-2.5 text-right font-medium"
+                                            class="px-3 py-3 text-right font-normal"
                                         >
                                             Δ cost
                                         </th>
                                         <th
                                             scope="col"
-                                            class="px-3 py-2.5 text-right font-medium"
+                                            class="px-3 py-3 text-right font-normal"
                                         >
                                             Δ tokens
                                         </th>
                                         <th
                                             scope="col"
-                                            class="px-3 py-2.5 text-right font-medium"
+                                            class="px-3 py-3 text-right font-normal"
                                         >
                                             Δ gens
                                         </th>
@@ -622,24 +621,25 @@ function refresh(): void {
                                     <tr
                                         v-for="day in daysToShow"
                                         :key="day.date"
-                                        class="border-b border-line-soft last:border-0"
+                                        class="border-b border-edge last:border-0"
                                     >
                                         <th
                                             scope="row"
-                                            class="border-l-2 px-3 py-2 text-left font-normal"
+                                            class="sticky left-0 border-l-2 bg-surface px-3 py-2.5 text-left font-normal"
                                             :class="
                                                 day.matches
-                                                    ? 'border-l-line-soft'
-                                                    : 'border-l-signal'
+                                                    ? 'border-l-edge'
+                                                    : 'border-l-document'
                                             "
                                         >
-                                            <span class="ledger text-signal">{{
-                                                day.date
-                                            }}</span>
-                                        </th>
-                                        <td class="px-3 py-2">
                                             <span
-                                                class="inline-flex items-center gap-1.5 text-[0.55rem] tracking-[0.1em] whitespace-nowrap uppercase"
+                                                class="ledger text-sm text-document"
+                                                >{{ day.date }}</span
+                                            >
+                                        </th>
+                                        <td class="px-3 py-2.5">
+                                            <span
+                                                class="vellum-meta inline-flex items-center gap-1.5 whitespace-nowrap"
                                             >
                                                 <component
                                                     :is="
@@ -653,8 +653,8 @@ function refresh(): void {
                                                 <span
                                                     :class="
                                                         day.matches
-                                                            ? 'text-signal-muted'
-                                                            : 'text-signal'
+                                                            ? 'text-ash'
+                                                            : 'text-document'
                                                     "
                                                 >
                                                     {{
@@ -666,7 +666,7 @@ function refresh(): void {
                                             </span>
                                         </td>
                                         <td
-                                            class="ledger px-3 py-2 text-right text-signal-muted"
+                                            class="ledger px-3 py-2.5 text-right text-xs text-ash"
                                         >
                                             {{
                                                 costCell(
@@ -675,12 +675,12 @@ function refresh(): void {
                                             }}
                                         </td>
                                         <td
-                                            class="ledger px-3 py-2 text-right text-signal-muted"
+                                            class="ledger px-3 py-2.5 text-right text-xs text-ash"
                                         >
                                             {{ costCell(day.local.cost_nanos) }}
                                         </td>
                                         <td
-                                            class="ledger px-3 py-2 text-right text-signal"
+                                            class="ledger px-3 py-2.5 text-right text-xs text-document"
                                         >
                                             {{
                                                 deltaCostCell(
@@ -689,12 +689,12 @@ function refresh(): void {
                                             }}
                                         </td>
                                         <td
-                                            class="ledger px-3 py-2 text-right text-signal"
+                                            class="ledger px-3 py-2.5 text-right text-xs text-document"
                                         >
                                             {{ day.token_difference }}
                                         </td>
                                         <td
-                                            class="ledger px-3 py-2 text-right text-signal"
+                                            class="ledger px-3 py-2.5 text-right text-xs text-document"
                                         >
                                             {{ day.generation_difference }}
                                         </td>
@@ -702,214 +702,73 @@ function refresh(): void {
                                 </tbody>
                             </table>
                         </div>
-
-                        <ul class="border border-line bg-paper lg:hidden">
-                            <li
-                                v-for="day in daysToShow"
-                                :key="day.date"
-                                class="border-b border-line-soft p-4 last:border-0"
-                                :class="
-                                    day.matches
-                                        ? 'border-l-2 border-l-line-soft'
-                                        : 'border-l-2 border-l-signal'
-                                "
-                            >
-                                <div
-                                    class="flex items-center justify-between gap-3"
-                                >
-                                    <span
-                                        class="ledger text-[0.62rem] text-signal"
-                                        >{{ day.date }}</span
-                                    >
-                                    <span
-                                        class="inline-flex items-center gap-1.5 font-mono text-[0.55rem] tracking-[0.1em] uppercase"
-                                    >
-                                        <component
-                                            :is="
-                                                day.matches
-                                                    ? CircleCheck
-                                                    : TriangleAlert
-                                            "
-                                            class="size-3 shrink-0"
-                                            aria-hidden="true"
-                                        />
-                                        <span
-                                            :class="
-                                                day.matches
-                                                    ? 'text-signal-muted'
-                                                    : 'text-signal'
-                                            "
-                                        >
-                                            {{ day.matches ? 'MATCH' : 'DIFF' }}
-                                        </span>
-                                    </span>
-                                </div>
-                                <dl
-                                    class="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 font-mono text-[0.6rem] tabular-nums"
-                                >
-                                    <div
-                                        class="flex items-center justify-between gap-2 border-b border-line-soft pb-2"
-                                    >
-                                        <dt
-                                            class="text-[0.52rem] tracking-[0.1em] text-signal-faint uppercase"
-                                        >
-                                            Provider
-                                        </dt>
-                                        <dd class="text-signal-muted">
-                                            {{
-                                                costCell(
-                                                    day.provider.cost_nanos,
-                                                )
-                                            }}
-                                        </dd>
-                                    </div>
-                                    <div
-                                        class="flex items-center justify-between gap-2 border-b border-line-soft pb-2"
-                                    >
-                                        <dt
-                                            class="text-[0.52rem] tracking-[0.1em] text-signal-faint uppercase"
-                                        >
-                                            Local
-                                        </dt>
-                                        <dd class="text-signal-muted">
-                                            {{ costCell(day.local.cost_nanos) }}
-                                        </dd>
-                                    </div>
-                                    <div
-                                        class="flex items-center justify-between gap-2"
-                                    >
-                                        <dt
-                                            class="text-[0.52rem] tracking-[0.1em] text-signal-faint uppercase"
-                                        >
-                                            Δ cost
-                                        </dt>
-                                        <dd class="text-signal">
-                                            {{
-                                                deltaCostCell(
-                                                    day.cost_difference_nanos,
-                                                )
-                                            }}
-                                        </dd>
-                                    </div>
-                                    <div
-                                        class="flex items-center justify-between gap-2"
-                                    >
-                                        <dt
-                                            class="text-[0.52rem] tracking-[0.1em] text-signal-faint uppercase"
-                                        >
-                                            Δ tokens
-                                        </dt>
-                                        <dd class="text-signal">
-                                            {{ day.token_difference }}
-                                        </dd>
-                                    </div>
-                                    <div
-                                        class="col-span-2 flex items-center justify-between gap-2"
-                                    >
-                                        <dt
-                                            class="text-[0.52rem] tracking-[0.1em] text-signal-faint uppercase"
-                                        >
-                                            Δ gens
-                                        </dt>
-                                        <dd class="text-signal">
-                                            {{ day.generation_difference }}
-                                        </dd>
-                                    </div>
-                                </dl>
-                                <p
-                                    class="mt-3 border-t border-line-soft pt-2 font-mono text-[0.55rem] text-signal-faint"
-                                >
-                                    Deltas are local minus provider.
-                                </p>
-                            </li>
-                        </ul>
+                        <p class="vellum-meta">
+                            Deltas are local minus provider.
+                        </p>
                     </template>
                 </section>
             </template>
 
-            <section aria-labelledby="lifetime-title">
+            <section aria-labelledby="lifetime-title" class="space-y-4">
                 <div
-                    class="flex items-baseline justify-between border-b border-line pb-3"
+                    class="flex flex-wrap items-end justify-between gap-3 border-b border-line pb-3"
                 >
-                    <h2 id="lifetime-title" class="eyebrow">
-                        04 / Lifetime ledger
-                    </h2>
-                    <p
-                        class="ledger text-[0.55rem] tracking-[0.12em] text-signal-faint uppercase"
+                    <h2
+                        id="lifetime-title"
+                        class="vellum-title text-xl text-document"
                     >
-                        Settled / all time
-                    </p>
+                        Lifetime ledger
+                    </h2>
+                    <p class="vellum-meta">Settled / all time</p>
                 </div>
                 <div
-                    class="grid border-x border-b border-line sm:grid-cols-2 lg:grid-cols-4"
+                    class="grid grid-cols-2 gap-px border border-line bg-line lg:grid-cols-4"
                 >
-                    <div
-                        class="border-line bg-signal p-5 text-signal-invert sm:border-r sm:p-6"
-                    >
+                    <div class="bg-document p-5 text-void sm:p-6">
+                        <p class="vellum-meta text-void/70">Lifetime margin</p>
                         <p
-                            class="font-mono text-[0.58rem] tracking-[0.14em] text-signal-invert/60 uppercase"
-                        >
-                            Lifetime margin
-                        </p>
-                        <p
-                            class="ledger mt-5 text-2xl tracking-[-0.04em] lg:text-3xl"
+                            class="ledger mt-6 text-xl tracking-[-0.04em] sm:text-2xl lg:text-3xl"
                         >
                             {{ lifetime.margin }}
                         </p>
-                        <p
-                            class="ledger mt-2 text-[0.58rem] tracking-[0.08em] text-signal-invert/70 uppercase"
-                        >
+                        <p class="mt-3 text-xs leading-relaxed text-void/80">
                             {{ marginPercent }} of provider cost
                         </p>
-                        <p
-                            class="mt-1 font-mono text-[0.52rem] tracking-[0.08em] text-signal-invert/70 uppercase"
-                        >
+                        <p class="vellum-meta mt-1 text-void/60">
                             margin ÷ provider cost
                         </p>
                     </div>
-                    <div
-                        class="border-t border-line-soft bg-paper p-5 sm:border-t-0 sm:p-6 lg:border-r"
-                    >
-                        <p class="eyebrow">Provider cost</p>
+                    <div class="bg-surface p-5 sm:p-6">
+                        <p class="text-sm text-document">Provider cost</p>
                         <p
-                            class="ledger mt-5 text-2xl tracking-[-0.03em] text-signal lg:text-3xl"
+                            class="ledger mt-6 text-xl tracking-[-0.03em] text-document sm:text-2xl lg:text-3xl"
                         >
                             {{ lifetime.provider_cost }}
                         </p>
-                        <p
-                            class="ledger mt-2 text-[0.58rem] tracking-[0.08em] text-signal-muted uppercase"
-                        >
+                        <p class="mt-3 text-xs leading-relaxed text-ash">
                             lifetime, settled
                         </p>
                     </div>
-                    <div
-                        class="border-t border-line-soft bg-paper p-5 sm:border-t-0 sm:border-r sm:p-6"
-                    >
-                        <p class="eyebrow">Customer charges</p>
+                    <div class="bg-surface p-5 sm:p-6">
+                        <p class="text-sm text-document">Customer charges</p>
                         <p
-                            class="ledger mt-5 text-2xl tracking-[-0.03em] text-signal lg:text-3xl"
+                            class="ledger mt-6 text-xl tracking-[-0.03em] text-document sm:text-2xl lg:text-3xl"
                         >
                             {{ lifetime.customer_charge }}
                         </p>
-                        <p
-                            class="ledger mt-2 text-[0.58rem] tracking-[0.08em] text-signal-muted uppercase"
-                        >
+                        <p class="mt-3 text-xs leading-relaxed text-ash">
                             {{ lifetime.charged_generations.toLocaleString() }}
                             charges
                         </p>
                     </div>
-                    <div
-                        class="border-t border-line-soft bg-paper p-5 sm:p-6 lg:border-t-0"
-                    >
-                        <p class="eyebrow">Studio</p>
+                    <div class="bg-surface p-5 sm:p-6">
+                        <p class="text-sm text-document">Studio</p>
                         <p
-                            class="ledger mt-5 text-2xl tracking-[-0.03em] text-signal lg:text-3xl"
+                            class="ledger mt-6 text-xl tracking-[-0.03em] text-document sm:text-2xl lg:text-3xl"
                         >
                             {{ lifetime.users.toLocaleString() }}
                         </p>
-                        <p
-                            class="ledger mt-2 text-[0.58rem] tracking-[0.08em] text-signal-muted uppercase"
-                        >
+                        <p class="mt-3 text-xs leading-relaxed text-ash">
                             accounts ·
                             {{ lifetime.tokens.toLocaleString() }} tokens
                         </p>
@@ -922,62 +781,70 @@ function refresh(): void {
                     class="flex flex-wrap items-end justify-between gap-3 border-b border-line pb-4"
                 >
                     <div>
-                        <p class="eyebrow">05 / Immutable records</p>
+                        <p class="vellum-meta">Immutable records</p>
                         <h2
                             id="operator-recent"
-                            class="display-title mt-2 text-2xl tracking-[-0.02em] text-signal sm:text-3xl"
+                            class="vellum-title mt-2 text-2xl text-document sm:text-[1.9rem]"
                         >
                             Latest settlements
                         </h2>
                     </div>
-                    <p
-                        class="flex items-center gap-1.5 font-mono text-[0.55rem] tracking-[0.1em] text-signal-muted uppercase"
-                    >
+                    <p class="vellum-meta flex items-center gap-1.5">
                         <Clock3 class="size-3" aria-hidden="true" />
                         Newest first
                     </p>
                 </div>
 
                 <template v-if="recent.length > 0">
-                    <div class="hidden border border-line bg-paper lg:block">
-                        <table class="w-full border-collapse text-left text-sm">
+                    <div
+                        class="focus-ring overflow-x-auto border border-line bg-surface"
+                        role="region"
+                        aria-label="Latest settlements table, scroll horizontally"
+                        tabindex="0"
+                    >
+                        <table
+                            class="w-full min-w-[780px] border-collapse text-left"
+                        >
+                            <caption class="sr-only">
+                                Latest immutable settlements with plate,
+                                account, provider cost, customer charge, tokens
+                                and margin.
+                            </caption>
                             <thead>
-                                <tr
-                                    class="border-b border-line font-mono text-[0.52rem] tracking-[0.12em] text-signal-muted uppercase"
-                                >
+                                <tr class="vellum-meta border-b border-line">
                                     <th
                                         scope="col"
-                                        class="px-4 py-3 font-medium"
+                                        class="px-4 py-3 font-normal"
                                     >
                                         Plate
                                     </th>
                                     <th
                                         scope="col"
-                                        class="px-4 py-3 font-medium"
+                                        class="px-4 py-3 font-normal"
                                     >
                                         Account
                                     </th>
                                     <th
                                         scope="col"
-                                        class="px-4 py-3 text-right font-medium"
+                                        class="px-4 py-3 text-right font-normal"
                                     >
                                         Provider
                                     </th>
                                     <th
                                         scope="col"
-                                        class="px-4 py-3 text-right font-medium"
+                                        class="px-4 py-3 text-right font-normal"
                                     >
                                         Charged
                                     </th>
                                     <th
                                         scope="col"
-                                        class="px-4 py-3 text-right font-medium"
+                                        class="px-4 py-3 text-right font-normal"
                                     >
                                         Tokens
                                     </th>
                                     <th
                                         scope="col"
-                                        class="px-4 py-3 text-right font-medium"
+                                        class="px-4 py-3 text-right font-normal"
                                     >
                                         Margin
                                     </th>
@@ -990,20 +857,20 @@ function refresh(): void {
                                 <tr
                                     v-for="(entry, index) in recent"
                                     :key="`${entry.id}-${index}`"
-                                    class="border-b border-line-soft transition-colors last:border-0 hover:bg-paper-deep motion-reduce:transition-none"
+                                    class="border-b border-edge transition-colors last:border-0 hover:bg-elevated motion-reduce:transition-none"
                                 >
                                     <td class="max-w-[24rem] px-4 py-3">
                                         <Link
                                             v-if="entry.id"
                                             :href="`/generations/${entry.id}`"
-                                            class="line-clamp-1 font-display text-[0.95rem] text-signal hover:text-signal-muted"
+                                            class="focus-ring line-clamp-1 font-display text-[0.95rem] text-document hover:text-ash"
                                             >{{ entry.prompt }}</Link
                                         >
-                                        <span v-else class="text-signal-muted"
+                                        <span v-else class="text-ash"
                                             >Removed plate</span
                                         >
                                         <p
-                                            class="ledger mt-0.5 text-[0.55rem] text-signal-faint"
+                                            class="ledger mt-1 text-[0.65rem] text-ash"
                                         >
                                             {{
                                                 formatDateTime(entry.settled_at)
@@ -1011,27 +878,27 @@ function refresh(): void {
                                         </p>
                                     </td>
                                     <td
-                                        class="ledger px-4 py-3 text-[0.58rem] text-signal-muted"
+                                        class="ledger px-4 py-3 text-xs text-ash"
                                     >
                                         {{ entry.user }}
                                     </td>
                                     <td
-                                        class="ledger px-4 py-3 text-right text-[0.62rem] text-signal-muted"
+                                        class="ledger px-4 py-3 text-right text-xs text-ash"
                                     >
                                         {{ entry.provider_cost }}
                                     </td>
                                     <td
-                                        class="ledger px-4 py-3 text-right text-[0.62rem] text-signal"
+                                        class="ledger px-4 py-3 text-right text-xs text-document"
                                     >
                                         {{ entry.customer_charge }}
                                     </td>
                                     <td
-                                        class="ledger px-4 py-3 text-right text-[0.62rem] text-signal-muted"
+                                        class="ledger px-4 py-3 text-right text-xs text-ash"
                                     >
                                         {{ entry.tokens.toLocaleString() }}
                                     </td>
                                     <td
-                                        class="ledger px-4 py-3 text-right text-[0.62rem] text-signal"
+                                        class="ledger px-4 py-3 text-right text-xs text-document"
                                     >
                                         {{ entry.margin }}
                                     </td>
@@ -1039,7 +906,7 @@ function refresh(): void {
                                         <Link
                                             v-if="entry.id"
                                             :href="`/generations/${entry.id}`"
-                                            class="focus-ring inline-flex text-signal-muted hover:text-signal"
+                                            class="focus-ring inline-flex text-ash hover:text-document"
                                             :aria-label="`Open ${entry.id}`"
                                         >
                                             <ArrowUpRight
@@ -1052,108 +919,11 @@ function refresh(): void {
                             </tbody>
                         </table>
                     </div>
-
-                    <ul class="border border-line bg-paper lg:hidden">
-                        <li
-                            v-for="(entry, index) in recent"
-                            :key="`${entry.id}-${index}`"
-                            class="border-b border-line-soft p-4 last:border-0"
-                        >
-                            <div class="flex items-start justify-between gap-4">
-                                <div class="min-w-0">
-                                    <Link
-                                        v-if="entry.id"
-                                        :href="`/generations/${entry.id}`"
-                                        class="line-clamp-2 font-display text-[1rem] leading-snug text-signal hover:text-signal-muted"
-                                        >{{ entry.prompt }}</Link
-                                    >
-                                    <span
-                                        v-else
-                                        class="text-sm text-signal-muted"
-                                        >Removed plate</span
-                                    >
-                                    <p
-                                        class="ledger mt-2 text-[0.6rem] text-signal-faint"
-                                    >
-                                        {{ formatDateTime(entry.settled_at) }}
-                                    </p>
-                                </div>
-                                <Link
-                                    v-if="entry.id"
-                                    :href="`/generations/${entry.id}`"
-                                    class="focus-ring inline-flex shrink-0 text-signal-muted hover:text-signal"
-                                    :aria-label="`Open ${entry.id}`"
-                                >
-                                    <ArrowUpRight
-                                        class="size-4"
-                                        aria-hidden="true"
-                                    />
-                                </Link>
-                            </div>
-                            <p
-                                class="mt-3 font-mono text-[0.55rem] tracking-[0.1em] text-signal-faint uppercase"
-                            >
-                                Account · {{ entry.user ?? 'Unknown' }}
-                            </p>
-                            <dl
-                                class="mt-2 grid grid-cols-2 gap-x-4 gap-y-2 font-mono text-[0.6rem] tabular-nums"
-                            >
-                                <div
-                                    class="flex items-center justify-between gap-2 border-b border-line-soft pb-2"
-                                >
-                                    <dt
-                                        class="text-[0.52rem] tracking-[0.1em] text-signal-faint uppercase"
-                                    >
-                                        Provider
-                                    </dt>
-                                    <dd class="text-signal-muted">
-                                        {{ entry.provider_cost }}
-                                    </dd>
-                                </div>
-                                <div
-                                    class="flex items-center justify-between gap-2 border-b border-line-soft pb-2"
-                                >
-                                    <dt
-                                        class="text-[0.52rem] tracking-[0.1em] text-signal-faint uppercase"
-                                    >
-                                        Charged
-                                    </dt>
-                                    <dd class="text-signal">
-                                        {{ entry.customer_charge }}
-                                    </dd>
-                                </div>
-                                <div
-                                    class="flex items-center justify-between gap-2"
-                                >
-                                    <dt
-                                        class="text-[0.52rem] tracking-[0.1em] text-signal-faint uppercase"
-                                    >
-                                        Tokens
-                                    </dt>
-                                    <dd class="text-signal-muted">
-                                        {{ entry.tokens.toLocaleString() }}
-                                    </dd>
-                                </div>
-                                <div
-                                    class="flex items-center justify-between gap-2"
-                                >
-                                    <dt
-                                        class="text-[0.52rem] tracking-[0.1em] text-signal-faint uppercase"
-                                    >
-                                        Margin
-                                    </dt>
-                                    <dd class="text-signal">
-                                        {{ entry.margin }}
-                                    </dd>
-                                </div>
-                            </dl>
-                        </li>
-                    </ul>
                 </template>
 
                 <p
                     v-else
-                    class="border border-dashed border-line bg-paper px-5 py-6 text-sm leading-relaxed text-signal-muted"
+                    class="border border-dashed border-line bg-surface px-5 py-6 text-sm leading-relaxed text-ash"
                 >
                     No settled charges yet. The reconciliation will fill once a
                     generation completes.
@@ -1161,7 +931,7 @@ function refresh(): void {
             </section>
 
             <p
-                class="max-w-2xl border-t border-line pt-5 text-[0.65rem] leading-relaxed text-signal-muted"
+                class="max-w-2xl border-t border-line pt-5 text-xs leading-relaxed text-ash"
             >
                 Reconciliation compares the Pixelforge usage report (grouped by
                 UTC completion day) with Vellum's immutable charge ledger. The

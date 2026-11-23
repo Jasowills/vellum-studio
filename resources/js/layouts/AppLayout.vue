@@ -1,16 +1,6 @@
 <script setup lang="ts">
 import { Link, router, usePage } from '@inertiajs/vue3';
-import {
-    ChartNoAxesColumn,
-    ChevronDown,
-    Images,
-    LogOut,
-    Menu,
-    Settings,
-    ShieldCheck,
-    Sparkles,
-    X,
-} from '@lucide/vue';
+import { ChevronDown, LogOut, Menu, Settings, X } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import BrandMark from '@/components/BrandMark.vue';
 import {
@@ -41,23 +31,13 @@ const path = computed(() => page.url.split('?')[0]);
 
 const navItems = computed(() => {
     const items = [
-        { label: 'Studio', href: '/studio', icon: Sparkles, match: '/studio' },
-        { label: 'Library', href: '/library', icon: Images, match: '/library' },
-        {
-            label: 'Usage',
-            href: '/usage',
-            icon: ChartNoAxesColumn,
-            match: '/usage',
-        },
+        { label: 'Studio', href: '/studio' },
+        { label: 'Library', href: '/library' },
+        { label: 'Usage', href: '/usage' },
     ];
 
     if (isAdmin.value) {
-        items.push({
-            label: 'Report',
-            href: '/admin/report',
-            icon: ShieldCheck,
-            match: '/admin/report',
-        });
+        items.push({ label: 'Report', href: '/admin/report' });
     }
 
     return items;
@@ -86,27 +66,27 @@ const flash = computed(() => {
 </script>
 
 <template>
-    <div class="min-h-svh bg-background text-foreground">
+    <div class="min-h-svh overflow-x-clip bg-void text-document">
         <a
             href="#main-content"
-            class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:bg-signal focus:px-4 focus:py-2 focus:text-signal-invert"
+            class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:bg-document focus:px-4 focus:py-2 focus:text-void"
         >
             Skip to content
         </a>
 
         <div
             v-if="flash && !flashDismissed"
-            class="border-b border-line bg-paper-deep"
+            class="border-b border-line bg-elevated"
             role="status"
             aria-live="polite"
         >
             <div
-                class="mx-auto flex max-w-[1440px] items-center justify-between gap-4 px-5 py-2.5 font-mono text-[0.65rem] tracking-[0.05em] text-signal sm:px-8 lg:px-12"
+                class="vellum-shell flex items-center justify-between gap-4 py-2.5 text-sm text-document"
             >
                 <span>{{ flash }}</span>
                 <button
                     type="button"
-                    class="focus-ring p-1 text-signal-muted transition-colors hover:text-signal"
+                    class="focus-ring p-1 text-ash transition-colors hover:text-document"
                     aria-label="Dismiss notification"
                     @click="flashDismissed = true"
                 >
@@ -115,63 +95,62 @@ const flash = computed(() => {
             </div>
         </div>
 
-        <header
-            class="sticky top-0 z-30 border-b border-line bg-background/95 backdrop-blur-[2px]"
-        >
+        <header class="sticky top-0 z-30 border-b border-line bg-void/95">
             <div
-                class="mx-auto flex h-16 max-w-[1440px] items-center justify-between gap-4 px-5 sm:px-8 lg:px-12"
+                class="vellum-shell flex h-16 items-center justify-between gap-5"
             >
-                <Link href="/studio" class="focus-ring">
-                    <BrandMark />
+                <Link
+                    href="/studio"
+                    class="focus-ring shrink-0"
+                    aria-label="Vellum studio"
+                >
+                    <BrandMark compact />
                 </Link>
 
                 <nav
-                    class="hidden items-center gap-1 lg:flex"
+                    class="hidden items-center gap-7 md:flex"
                     aria-label="Primary navigation"
                 >
                     <Link
                         v-for="item in navItems"
                         :key="item.href"
                         :href="item.href"
-                        class="group focus-ring relative inline-flex items-center gap-2 border border-transparent px-3 py-2 font-mono text-[0.65rem] tracking-[0.14em] uppercase transition-colors"
+                        class="focus-ring relative py-2 text-sm transition-colors"
                         :class="
                             isActive(item.href)
-                                ? 'border-line bg-paper text-signal'
-                                : 'text-signal-muted hover:text-signal'
+                                ? 'text-document'
+                                : 'text-ash hover:text-document'
                         "
                         :aria-current="isActive(item.href) ? 'page' : undefined"
                     >
-                        <component
-                            :is="item.icon"
-                            class="size-3.5"
-                            aria-hidden="true"
-                        />
                         {{ item.label }}
                         <span
                             v-if="isActive(item.href)"
-                            class="absolute inset-x-2 -bottom-px h-px bg-signal"
+                            class="absolute inset-x-0 -bottom-px h-px bg-document"
                             aria-hidden="true"
                         />
                     </Link>
                 </nav>
 
-                <div class="hidden items-center gap-2 lg:flex">
+                <div class="hidden items-center gap-3 md:flex">
                     <Link
                         href="/settings/profile"
-                        class="focus-ring inline-flex items-center gap-2 border border-line px-3 py-2 font-mono text-[0.65rem] tracking-[0.12em] text-signal-muted uppercase transition-colors hover:border-signal hover:text-signal"
+                        class="focus-ring text-sm text-ash transition-colors hover:text-document"
                     >
-                        <Settings class="size-3.5" aria-hidden="true" />
                         Settings
                     </Link>
 
                     <DropdownMenu>
                         <DropdownMenuTrigger
-                            class="focus-ring inline-flex items-center gap-2 border border-line px-3 py-2 text-left transition-colors hover:border-signal"
+                            class="focus-ring inline-flex items-center gap-2 border border-line px-2.5 py-2 transition-colors hover:border-edge-strong"
                             as-child
                         >
-                            <button type="button">
+                            <button
+                                type="button"
+                                :aria-label="`Account menu for ${user?.name ?? 'user'}`"
+                            >
                                 <span
-                                    class="flex size-6 items-center justify-center border border-signal font-mono text-[0.6rem] text-signal"
+                                    class="flex size-5 items-center justify-center border border-edge-strong font-mono text-[0.6rem] text-document"
                                     aria-hidden="true"
                                 >
                                     {{
@@ -181,12 +160,12 @@ const flash = computed(() => {
                                     }}
                                 </span>
                                 <span
-                                    class="max-w-[9rem] truncate text-xs text-signal"
+                                    class="max-w-[8rem] truncate text-xs text-document"
                                 >
                                     {{ user?.name }}
                                 </span>
                                 <ChevronDown
-                                    class="size-3 text-signal-muted"
+                                    class="size-3 text-stone"
                                     aria-hidden="true"
                                 />
                             </button>
@@ -194,18 +173,16 @@ const flash = computed(() => {
                         <DropdownMenuContent
                             align="end"
                             :side-offset="6"
-                            class="border-line bg-popover font-sans text-popover-foreground"
+                            class="border-line bg-elevated font-sans text-document"
                         >
-                            <DropdownMenuLabel
-                                class="font-mono text-[0.6rem] tracking-[0.16em] text-signal-muted uppercase"
-                            >
+                            <DropdownMenuLabel class="vellum-meta">
                                 {{ user?.email }}
                             </DropdownMenuLabel>
                             <DropdownMenuSeparator class="bg-line" />
                             <DropdownMenuItem as-child>
                                 <Link
                                     href="/settings/profile"
-                                    class="focus:bg-accent"
+                                    class="focus:bg-elevated"
                                 >
                                     <Settings
                                         class="size-3.5"
@@ -215,7 +192,7 @@ const flash = computed(() => {
                                 </Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem
-                                class="focus:bg-accent"
+                                class="focus:bg-elevated"
                                 @select="logout"
                             >
                                 <LogOut class="size-3.5" aria-hidden="true" />
@@ -227,7 +204,7 @@ const flash = computed(() => {
 
                 <button
                     type="button"
-                    class="focus-ring inline-flex size-9 items-center justify-center border border-line text-signal lg:hidden"
+                    class="focus-ring inline-flex size-9 items-center justify-center border border-line text-document md:hidden"
                     :aria-expanded="mobileOpen"
                     aria-controls="mobile-navigation"
                     :aria-label="
@@ -243,90 +220,72 @@ const flash = computed(() => {
             <div
                 v-if="mobileOpen"
                 id="mobile-navigation"
-                class="border-t border-line bg-background lg:hidden"
+                class="border-t border-line bg-void md:hidden"
             >
                 <nav
-                    class="flex flex-col px-5 py-3"
+                    class="vellum-shell flex flex-col py-2"
                     aria-label="Mobile navigation"
                 >
                     <Link
                         v-for="item in navItems"
                         :key="item.href"
                         :href="item.href"
-                        class="flex items-center gap-3 border-b border-line-soft px-1 py-3 font-mono text-[0.68rem] tracking-[0.14em] uppercase"
+                        class="border-b border-edge py-3 text-sm"
                         :class="
-                            isActive(item.href)
-                                ? 'text-signal'
-                                : 'text-signal-muted'
+                            isActive(item.href) ? 'text-document' : 'text-ash'
                         "
                         :aria-current="isActive(item.href) ? 'page' : undefined"
                     >
-                        <component
-                            :is="item.icon"
-                            class="size-3.5"
-                            aria-hidden="true"
-                        />
                         {{ item.label }}
                     </Link>
                     <Link
                         href="/settings/profile"
-                        class="flex items-center gap-3 border-b border-line-soft px-1 py-3 font-mono text-[0.68rem] tracking-[0.14em] text-signal-muted uppercase"
+                        class="border-b border-edge py-3 text-sm text-ash"
                     >
-                        <Settings class="size-3.5" aria-hidden="true" />
                         Settings
                     </Link>
                     <button
                         type="button"
-                        class="mt-3 flex items-center gap-3 border border-line px-3 py-3 font-mono text-[0.68rem] tracking-[0.14em] text-signal uppercase"
+                        class="mt-3 flex items-center gap-2 py-3 text-left text-sm text-document"
                         @click="logout"
                     >
                         <LogOut class="size-3.5" aria-hidden="true" />
                         Sign out
                     </button>
-                    <p
-                        class="mt-4 truncate font-mono text-[0.6rem] text-signal-faint"
-                    >
+                    <p class="vellum-meta truncate pb-3">
                         {{ user?.email }}
                     </p>
                 </nav>
             </div>
         </header>
 
-        <div
-            v-if="breadcrumbs.length"
-            class="border-b border-line-soft bg-background"
-        >
+        <div v-if="breadcrumbs.length" class="border-b border-edge bg-void">
             <div
-                class="mx-auto flex max-w-[1440px] items-center gap-2 overflow-x-auto px-5 py-3 font-mono text-[0.6rem] tracking-[0.12em] text-signal-faint uppercase sm:px-8 lg:px-12"
+                class="vellum-shell flex items-center gap-2 overflow-x-auto py-3 text-xs text-stone"
             >
                 <template v-for="(crumb, index) in breadcrumbs" :key="index">
                     <span v-if="index > 0" aria-hidden="true">/</span>
                     <Link
                         v-if="crumb.href && index < breadcrumbs.length - 1"
                         :href="crumb.href"
-                        class="hover:text-signal"
+                        class="hover:text-document"
                     >
                         {{ crumb.title }}
                     </Link>
-                    <span v-else class="text-signal-muted">{{
-                        crumb.title
-                    }}</span>
+                    <span v-else class="text-ash">{{ crumb.title }}</span>
                 </template>
             </div>
         </div>
 
-        <main
-            id="main-content"
-            class="mx-auto max-w-[1440px] px-5 py-8 sm:px-8 lg:px-12 lg:py-10"
-        >
+        <main id="main-content" class="min-w-0">
             <slot />
         </main>
 
-        <footer class="border-t border-line-soft">
+        <footer class="border-t border-edge">
             <div
-                class="mx-auto flex max-w-[1440px] flex-col gap-3 px-5 py-6 font-mono text-[0.58rem] tracking-[0.14em] text-signal-faint uppercase sm:flex-row sm:items-center sm:justify-between sm:px-8 lg:px-12"
+                class="vellum-shell flex flex-col gap-2 py-5 text-xs text-stone sm:flex-row sm:items-center sm:justify-between"
             >
-                <span>Vellum / Signal studio</span>
+                <span>Vellum / creative instrument</span>
                 <span>Exact accounting · Private archive</span>
             </div>
         </footer>

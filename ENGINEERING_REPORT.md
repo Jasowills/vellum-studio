@@ -22,7 +22,7 @@ Local cost .................................................... $1.462355000
 Difference .................................................... $0.000000000
 ```
 
-The automated suite has **81 passing tests / 342 assertions**, with Pixelforge faked in every test. Pint, PHPStan level 7, Vue/TS checks, type checking, and the production build all pass; the GitHub Actions `tests` workflow is green on `main`. The product was then rebuilt from the brand outward as **SIGNAL**, a strict black-and-white system with Geist, Instrument Serif, Geist Mono, an original V mark, and a lazy Three.js signal object. Browser QA covered every main page at 1440, 1280, 768, and 390 px; the earlier axe-core pass found no WCAG A/AA violations, and the redesign pass verified monochrome rendering, exact fonts, no horizontal overflow, no broken images, no console errors, reduced-motion behavior, and WebGL lifecycle cleanup.
+The automated suite has **81 passing tests / 342 assertions**, with Pixelforge faked in every test. Pint, PHPStan level 7, Vue/TS checks, type checking, and the production build all pass; the GitHub Actions `tests` workflow is green on `main`. The product was then rebuilt from the brand outward as **MIDNIGHT / SIGNAL / CREATIVE TECHNOLOGY**: a black room, geometric V light-beam identity, Sora display type, Geist UI type, Geist Mono metadata, and a lazy Three.js sculpture. Browser QA covered every main page at 1440 and 390 px; the earlier axe-core pass found no WCAG A/AA violations, and the final pass verified monochrome rendering, exact fonts, no horizontal overflow, no broken images, no console errors, reduced-motion behavior, and WebGL lifecycle cleanup.
 
 ---
 
@@ -200,33 +200,33 @@ This demonstrated signature verification, queue processing, deduplication, and n
 
 ## 7. Frontend and accessibility
 
-The product now uses the **SIGNAL** design system: near-black and white only, zero-radius geometry, Geist Sans for UI, Instrument Serif for display, Geist Mono for technical metadata, and a single white signal accent against black fields. The visual language is dimensional and generative rather than decorative: a custom geometric V glyph, a separate wordmark treatment, a lazy-loaded Three.js object with a static SVG fallback, and real artwork used as evidence rather than staged mockups.
+The product now uses the **MIDNIGHT / SIGNAL** design system documented in `DESIGN.md`: a closed monochrome palette, square geometry, Sora for display, Geist Sans for UI and body copy, and Geist Mono for technical metadata only. Instrument Serif is gone. The identity is a geometric V cut from converging light planes, reproduced in the wordmark, favicon family, inline fallback, and lazy Three.js hero sculpture. Real artwork is used as evidence, not as staged mockup filler.
 
-The landing page follows a six-section narrative — ARRIVAL, FROM SIGNAL, THE WORK, THE STUDIO, TRANSPARENT CREATION, and ENTER — with a functional prompt. Unauthenticated submissions persist the prompt in short-lived `sessionStorage` through Fortify login; authenticated submissions go straight to `/studio` with the composer prefilled. No backend route or schema was changed for this behavior.
+The landing page is a full-viewport ARRIVAL followed by the exact required narrative: “Imagine it. Then see it.”, “Everything begins with an idea.”, “Make room for the unexpected.”, “Know what it costs. Keep creating.”, and “Let’s see what you imagine.” Both composers are functional. Unauthenticated submissions persist the prompt in short-lived `sessionStorage` through Fortify login; authenticated submissions go straight to `/studio` with the composer prefilled. No backend route or schema was changed for this behavior.
 
 Responsive and state coverage:
 
-- Landing: signal hero, working prompt, transformation sequence, five real Pixelforge plates, real studio screenshot, exact reconciliation figures, final CTA, minimal footer.
+- Landing: full-viewport V sculpture, working prompt, five tracked Pixelforge plates, real Studio screenshot, the documented rate-card cost example, final CTA, and compact footer.
 - Auth: login, register, forgot-password, 2FA challenge/verify, passkeys, and verification surfaces use the same monochrome field rhythm without changing Fortify behavior.
-- Studio: minimal nav rail, image-first canvas, floating composer, progressive advanced settings, live estimate, honest pending/processing states, and reference-token invalidation on prefill/edit.
-- Library and generation detail: status-label filters, image-first archive, active-only visibility-aware polling, terminal polling cleanup, robust image fallback, and admin-only provider gating.
-- Usage and admin report: accessible per-day chart data, responsive stacked tables, honest empty states, reconciliation cockpit, and margin denominator corrected to `lifetime.provider_cost`.
-- Settings: monochrome profile, password, 2FA, passkeys, and appearance surfaces; shared destructive/error/success components were also converted to grayscale rather than left with red/green leakage.
+- Studio: canvas-first instrument, naturally anchored composer, progressive settings, collapsible history, live 9-decimal estimate, and only real states (idle, entered, submitting, queued, processing, completed, failed).
+- Library and generation detail: image-first archive, exact charge values, active-only visibility-aware polling, terminal polling cleanup, robust image fallback, authenticated private image delivery, and admin-only provider gating.
+- Usage and admin report: accessible per-day chart data, internally scrollable wide chart/table containers, honest empty states, reconciliation cockpit, and margin denominator based on `lifetime.provider_cost`.
+- Settings: monochrome profile, password, 2FA, passkeys, and appearance surfaces; shared destructive/error/success components remain grayscale.
 
-Browser QA was rerun after the redesign at **1440, 1280, 768, and 390 px** on the landing page, studio, library, generation detail, usage, admin report, profile settings, and appearance settings, plus auth pages at 1440/768/390. For every page/breakpoint pair checked:
+Final browser QA was run at **1440 and 390 px** on the landing page, studio, library, generation detail, usage, admin report, all three settings surfaces, and public auth pages. For every page/breakpoint pair checked:
 
-| Check                               | Result                                    |
-| ----------------------------------- | ----------------------------------------- |
-| Horizontal document overflow        | none                                      |
-| Broken images                       | none                                      |
-| Console errors / 4xx responses      | none for the correct role and route       |
-| Computed chromatic CSS colors       | 0                                         |
-| Body / display / mono font families | Geist / Instrument Serif / Geist Mono     |
-| Unlabelled visible form fields      | 0                                         |
-| WebGL canvas on landing             | 1; removed on route change to `/studio`   |
-| `prefers-reduced-motion: reduce`    | no armed reveals, `scroll-behavior: auto` |
+| Check                               | Result                                  |
+| ----------------------------------- | --------------------------------------- |
+| Horizontal document scroll          | none                                    |
+| Broken or unloaded lazy images      | none after scroll-through               |
+| Console errors / warnings           | 0                                       |
+| Computed chromatic CSS colors       | 0                                       |
+| Body / display / mono font families | Geist / Sora / Geist Mono               |
+| Unlabelled visible form fields      | 0                                       |
+| WebGL canvas on landing             | 1; removed on route change to `/studio` |
+| `prefers-reduced-motion: reduce`    | static hero, `scroll-behavior: auto`    |
 
-Screenshot pixel histograms were also checked: all captured pages rendered at **100% grayscale**, with only neutral channel values. The earlier axe-core pass on the pre-redesign UI found no WCAG A/AA violations; keyboard focus, ARIA labels, skip links, and reduced-motion behavior were rechecked manually through DOM and browser automation after the redesign.
+The five landing plates and the Studio screenshot were scrolled into view and confirmed loaded at full intrinsic resolution. Authenticated image delivery returned `200 image/png`. The earlier axe-core pass on the pre-redesign UI found no WCAG A/AA violations; keyboard focus, ARIA labels, skip links, and reduced-motion behavior were rechecked through DOM and browser automation after the redesign.
 
 ---
 
@@ -243,13 +243,17 @@ docker run --rm --network vellum-net -v "$PWD":/app -w /app vellum-dev ./vendor/
 docker run --rm --network vellum-net -v "$PWD":/app -w /app vellum-dev ./vendor/bin/phpstan analyse --no-progress --memory-limit=1G
 # => [OK] No errors
 
+# Reconciliation
+docker run --rm --network vellum-net -v "$PWD":/app -w /app --env-file .env vellum-dev php artisan pixelforge:reconcile-usage --days=14
+# => 6 provider / 6 local, $1.462355000 on both sides, $0.000000000 difference
+
 # Frontend
-npm run check          # formatting + lint: 86 formatted files, 78 linted files; all pass
+npm run check          # 92 formatted files, 78 linted files; all pass
 npm run types:check    # vue-tsc --noEmit
-npm run build          # production build
+npm run build          # production build; Three.js remains in a lazy chunk
 ```
 
-GitHub Actions runs the same checks through `composer ci:check` on every push. The `tests` workflow has been verified green on `main`, including run `45244875780`.
+GitHub Actions runs the same checks through `composer ci:check` on every push. The `tests` workflow was verified green on `main` before this redesign (run `45259645135`); the final redesign commit's CI result is recorded in the closeout below.
 
 Tests deliberately use `https://pixelforge.test/v1` and HTTP fakes. `phpunit.xml` forces `APP_ENV=testing`, SQLite `:memory:`, array cache/session, queue `sync`, and a fixed `APP_KEY` so a developer's `.env` cannot redirect tests to a real database.
 
@@ -315,19 +319,21 @@ Sign in as `studio@vellum.studio` / `VellumStudio!2026` for the studio experienc
 
 ---
 
-## 11. SIGNAL redesign closeout
+## 11. MIDNIGHT redesign closeout
 
 ### Brand
 
-The warm-paper identity was replaced by **SIGNAL**, a strict black-and-white visual system. It uses an original geometric V mark, a separate wordmark treatment, a regenerated SVG/ICO/Apple-touch favicon family, Geist Sans for interface copy, Instrument Serif for display moments, and Geist Mono for technical metadata. The mark and wordmark were checked at favicon, nav, and large-display scales. Tailwind radius tokens were remapped to `0px`; shared error, success, destructive, and badge components were de-colored instead of leaving red/green leakage inside the monochrome shell.
+The prior SIGNAL identity was superseded by the pinned **MIDNIGHT / SIGNAL / CREATIVE TECHNOLOGY** direction. The system is fully specified in `DESIGN.md`: the exact 13-colour black/grey/white palette, Sora for display and brand headlines, Geist Sans for UI and body copy, Geist Mono for technical metadata, zero radius, and hairline structure. Instrument Serif was removed from the font pipeline. The geometric V glyph, wordmark, SVG favicon, ICO, and Apple-touch icon were all regenerated as monochrome assets; the Apple-touch and ICO files were rebuilt from the final SVG after a pixel audit showed the earlier PNG was white-dominant. Shared status, badge, error, success, and destructive components remain grayscale.
 
 ### Experience
 
-The landing page now tells a six-part story — ARRIVAL, FROM SIGNAL, THE WORK, THE STUDIO, TRANSPARENT CREATION, ENTER — using five tracked real Pixelforge plates, a real Studio screenshot, and the exact reconciliation figures already present in the ledger. The landing prompt is functional: unauthenticated users keep it through Fortify login; authenticated users are routed directly into a prefilled composer. Studio, library, generation detail, usage, admin report, auth, and settings were rebuilt as one coherent instrument rather than separate themed pages. Backend contracts, financial behavior, Inertia component names, resource shapes, authorization, tests, and database schema were left intact.
+The landing page is now a working front door rather than a brochure. Its full-viewport ARRIVAL uses a custom Three.js V sculpture, the exact required headline sequence, two real prompt composers, five tracked Pixelforge plates, a real Studio screenshot, the documented rate-card cost example, a final CTA, and a compact footer. There are no numbered section titles, generic feature cards, fake metrics, testimonials, or invented progress.
+
+Studio is canvas-first with minimal chrome, a naturally anchored composer, progressive settings, collapsible history, and only real states. Library, generation detail, usage, admin, auth, and settings were rebuilt as one coherent instrument. Backend contracts, Pixelforge behavior, financial calculations, Inertia component names, resource shapes, authorization, tests, and database schema were preserved.
 
 ### Motion
 
-Three.js is used only for the landing signal object. The heavy module is lazy-loaded, mounted on intersection, paused when off-screen or when the document is hidden, sized with `ResizeObserver`, and disposed on unmount. Route-change QA confirmed the landing canvas exists and the studio canvas count is zero. `prefers-reduced-motion` disables reveal animation and smooth scrolling, with a static geometric fallback in the component. The generated lazy chunk is isolated from the initial app bundle.
+Three.js is used only for the landing V. The heavy module is lazy-loaded, mounted on intersection, paused when off-screen or when the document is hidden, sized with `ResizeObserver`, and disposed on unmount. Pointer response is restrained and the sweep is slow. Route-change QA confirmed one canvas on landing and zero on Studio. With `prefers-reduced-motion: reduce`, the hero keeps a static geometric rendering and `scroll-behavior` is `auto`. No percentage progress or synthetic success animation was added.
 
 ### Verification
 
@@ -336,23 +342,26 @@ Final checks all passed:
 - `php artisan test --compact` — **81 passed, 342 assertions**
 - `./vendor/bin/pint --test` — **PASS, 121 files**
 - `./vendor/bin/phpstan analyse --no-progress --memory-limit=1G` — **[OK] No errors**
-- `pixelforge:reconcile-usage --days=14` — 6 provider / 6 local generations, `$1.462355000` on both sides, `$0.000000000` difference
-- `npm run check` — 86 formatted files, 78 linted files, no issues
+- `pixelforge:reconcile-usage --days=14` — 6 provider / 6 local generations, `$1.462355000` on both sides, `$0.000000000` difference, `$1.827943750` customer charges
+- `npm run check` — 92 formatted files, 78 linted files, no issues
 - `npm run types:check` — no errors
-- `npm run build` — production build succeeded with the Three.js chunk lazy-loaded
+- `npm run build` — production build succeeded; Three.js remains in an isolated lazy chunk
 
-Browser QA was rerun at 1440, 1280, 768, and 390 px after the final edits. Screenshots were retained for each surface and breakpoint. The checks found no horizontal overflow, broken images, console errors, wrong-role 4xx responses, chromatic CSS, or unlabelled visible fields. First Tab focus on both landing and studio is the visible “Skip to content” link with a solid 2px outline. Pixel histograms of all captured screenshots were 100% grayscale.
+Browser QA was rerun at 1440 and 390 px after the final edits. All landing images were scrolled into view and confirmed loaded at full intrinsic resolution, including `studio-interface.png`. No horizontal document scroll, broken images, console errors/warnings, chromatic computed CSS, or unlabelled visible fields were found. Studio's live estimate renders exact 9-decimal values from nanos; library, detail, usage, and admin show the same exact money format. The authenticated private image route returned `200 image/png`. Wide admin/usage containers scroll internally rather than moving the document.
 
-The in-app browser was then used for a final live inspection of the landing page, login, studio, library, generation detail, usage, admin report, and settings surfaces, plus the public Cloudflare build. Lighthouse scored accessibility, best practices, and SEO at 1.00 on those surfaces after fixing two real findings: low-contrast metadata on the landing page and admin report, and two accessible names that did not include their visible text. The signed-in prompt handoff was exercised both ways in the browser: unauthenticated submission survived login into a prefilled studio composer, and authenticated submission navigated directly to a prefilled composer with the short-lived storage key cleared.
+Prompt handoff was exercised through the real UI on both paths:
+
+1. Unauthenticated: hero prompt stored under `vellum:pending-prompt`, routed to login, then restored into the Studio composer after Fortify login.
+2. Authenticated: closing prompt routed straight to Studio, restored into the composer, and consumed from storage.
 
 ### Git and deployment
 
-The redesign is committed as one focused frontend/documentation change on `main`, with no secrets, build output, local `.env`, or private generation images added. The public repository remains <https://github.com/Jasowills/vellum-studio>. The live demo is still the ephemeral Cloudflare quick tunnel noted above; durable hosting remains blocked by the same external credential/billing constraints, not by application code.
+The redesign is committed as a focused frontend/documentation change on `main`, with no secrets, `.env`, API/webhook credentials, generated build output, or private generation images added. The public repository remains <https://github.com/Jasowills/vellum-studio>. The live demo is still the ephemeral Cloudflare quick tunnel noted above; durable hosting remains blocked by the same external credential/billing constraints, not by application code.
 
 ### Genuine remaining work
 
 1. Provision a durable Laravel host with MySQL and Redis, then set `APP_URL`, Pixelforge credentials, and the webhook secret.
 2. With Pixelforge dashboard credentials, register the production webhook URL and verify a signed live event against the permanent host.
-3. If a human visual sign-off is required before a permanent launch, review the retained breakpoint screenshots; this session's screenshot inspection was automated through DOM geometry and pixel histograms rather than human vision.
+3. If a human visual sign-off is required before a permanent launch, review the retained screenshots; this session's inspection was automated through DOM geometry, lazy-load checks, grayscale/chromatic sampling, and captured pixels rather than human vision.
 
 No known product defect, test failure, reconciliation mismatch, or required backend change remains from this redesign.

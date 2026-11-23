@@ -35,7 +35,7 @@ Vellum is a Laravel 13 + Vue 3 + Inertia + TypeScript + Tailwind 4 application t
 | Auth          | Laravel Fortify (email/password, passkeys, 2FA, verification)            |
 | Queue / cache | Redis (configurable)                                                     |
 | Database      | MySQL in development/demo; SQLite in tests                               |
-| Design        | SIGNAL monochrome system — Geist, Instrument Serif, Geist Mono, Three.js |
+| Design        | MIDNIGHT / SIGNAL system — Sora, Geist, Geist Mono, geometric Three.js V |
 
 ---
 
@@ -155,7 +155,7 @@ Tests use HTTP fakes for Pixelforge; no test makes an external API call. Coverag
 - usage reconciliation and provider-day token totals
 - library pagination/resource shape (regression test for nested `data` payloads)
 
-The SIGNAL frontend was also checked in a real browser at 1440, 1280, 768, and 390 px across the landing page, auth, studio, library, generation detail, usage, admin report, and settings. That pass verified no horizontal overflow, no broken images, no console errors, exact-font loading, strict monochrome rendering, reduced-motion behavior, WebGL lifecycle cleanup on route changes, and both authenticated and unauthenticated prompt handoff.
+The MIDNIGHT frontend was also checked in a real browser at 1440 and 390 px across the landing page, auth, studio, library, generation detail, usage, admin report, and settings. That pass verified no horizontal overflow, no broken images, no console errors, exact-font loading, strict monochrome rendering, reduced-motion behavior, WebGL lifecycle cleanup on route changes, and both authenticated and unauthenticated prompt handoff.
 
 Frontend checks:
 

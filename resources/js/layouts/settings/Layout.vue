@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
 import { Palette, Shield, UserRound } from '@lucide/vue';
-import Heading from '@/components/Heading.vue';
-import { Separator } from '@/components/ui/separator';
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
 import { toUrl } from '@/lib/utils';
 import { edit as editAppearance } from '@/routes/appearance';
@@ -32,25 +30,27 @@ const { isCurrentOrParentUrl } = useCurrentUrl();
 </script>
 
 <template>
-    <div class="mx-auto w-full max-w-6xl px-5 py-8 sm:px-8 lg:px-10 lg:py-10">
-        <div class="border-b border-line pb-6">
-            <p class="eyebrow">Account / Settings</p>
-            <Heading
-                class="mt-4"
-                title="Settings"
-                description="Manage your profile, security, and appearance."
-            />
-        </div>
+    <div class="w-full max-w-6xl px-5 py-8 sm:px-8 lg:py-10">
+        <header class="border-b border-line pb-7">
+            <p class="vellum-meta">Account / Settings</p>
+            <h1
+                class="vellum-title mt-3 text-[1.75rem] text-document sm:text-2xl"
+            >
+                Settings
+            </h1>
+            <p class="mt-2 max-w-lg text-sm leading-relaxed text-ash">
+                Manage your profile, security, and appearance.
+            </p>
+        </header>
 
         <div class="mt-8 flex flex-col gap-8 lg:flex-row lg:gap-12">
-            <nav aria-label="Settings" class="lg:w-56 lg:shrink-0">
-                <ul
-                    class="flex gap-1 overflow-x-auto lg:flex-col lg:overflow-visible"
-                >
+            <nav aria-label="Settings" class="lg:w-52 lg:shrink-0">
+                <p class="vellum-meta mb-3 hidden lg:block">Sections</p>
+                <ul class="flex flex-col gap-1">
                     <li
                         v-for="item in sidebarNavItems"
                         :key="toUrl(item.href)"
-                        class="shrink-0 lg:w-full"
+                        class="w-full"
                     >
                         <Link
                             :href="item.href"
@@ -59,11 +59,11 @@ const { isCurrentOrParentUrl } = useCurrentUrl();
                                     ? 'page'
                                     : undefined
                             "
-                            class="focus-ring group flex w-full items-center gap-3 border-b-2 border-transparent px-3 py-2.5 font-mono text-[0.68rem] tracking-[0.14em] text-signal-muted uppercase transition-colors hover:text-signal lg:border-b-0 lg:border-l-2 lg:px-4"
+                            class="focus-ring flex w-full items-center gap-3 border-l-2 px-3 py-2.5 text-sm transition-colors"
                             :class="
                                 isCurrentOrParentUrl(item.href)
-                                    ? 'border-signal text-signal lg:border-l-signal'
-                                    : 'hover:border-line lg:hover:border-line'
+                                    ? 'border-document bg-surface text-document'
+                                    : 'border-edge text-ash hover:border-edge-strong hover:text-document'
                             "
                         >
                             <component
@@ -77,10 +77,11 @@ const { isCurrentOrParentUrl } = useCurrentUrl();
                 </ul>
             </nav>
 
-            <Separator class="lg:hidden" />
-
-            <div class="min-w-0 flex-1 md:max-w-2xl">
-                <section class="space-y-10" aria-label="Settings content">
+            <div class="min-w-0 flex-1 lg:max-w-[720px]">
+                <section
+                    class="border-t border-line pt-8 lg:border-t-0 lg:pt-0"
+                    aria-label="Settings content"
+                >
                     <slot />
                 </section>
             </div>

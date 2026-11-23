@@ -94,21 +94,16 @@ watch(
 <template>
     <Link
         :href="`/generations/${generation.id}`"
-        class="group block focus-visible:outline-none"
+        class="group block min-w-0 focus-visible:outline-none"
     >
         <span class="sr-only">Open generation: </span>
         <article
-            class="overflow-hidden border border-line bg-paper transition-transform duration-200 group-focus-visible:ring-2 group-focus-visible:ring-signal group-focus-visible:ring-offset-2 group-focus-visible:ring-offset-background hover:-translate-y-0.5 motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+            class="flex h-full min-w-0 flex-col border border-line bg-void transition-colors duration-200 group-focus-visible:ring-2 group-focus-visible:ring-document group-focus-visible:ring-offset-2 group-focus-visible:ring-offset-void hover:border-edge-strong motion-reduce:transition-none"
         >
             <div
-                class="relative overflow-hidden bg-paper-deep"
+                class="relative min-w-0 overflow-hidden bg-abyss"
                 :style="{ aspectRatio: ratioCss(generation.size) }"
             >
-                <div
-                    class="signal-grid pointer-events-none absolute inset-0 opacity-30"
-                    aria-hidden="true"
-                />
-
                 <img
                     v-if="showImage"
                     :src="generation.image.url ?? undefined"
@@ -121,78 +116,82 @@ watch(
 
                 <div
                     v-else-if="active"
-                    class="relative z-10 flex h-full w-full flex-col items-center justify-center gap-3 px-6 text-center"
+                    class="relative z-10 flex h-full w-full flex-col items-center justify-center gap-2 px-4 text-center"
                     aria-live="polite"
                     aria-atomic="true"
                 >
                     <span
-                        class="font-mono text-[0.625rem] tracking-[0.2em] text-signal-muted uppercase"
+                        class="font-mono text-[0.6rem] tracking-[0.14em] text-document"
                     >
                         {{ activeCopy }}
                     </span>
-                    <span class="h-px w-16 bg-signal-line" aria-hidden="true" />
+                    <span class="h-px w-8 bg-line" aria-hidden="true" />
                 </div>
 
                 <div
                     v-else
-                    class="relative z-10 flex h-full w-full flex-col items-center justify-center gap-3 px-6 text-center"
+                    class="relative z-10 flex h-full w-full flex-col items-center justify-center gap-2 px-4 text-center"
                 >
                     <span
-                        class="font-display text-4xl leading-none text-signal-faint"
+                        class="font-display text-3xl leading-none text-stone"
                         aria-hidden="true"
                     >
                         ×
                     </span>
                     <span
-                        class="font-mono text-[0.625rem] tracking-[0.18em] text-signal-muted uppercase"
+                        class="font-mono text-[0.6rem] tracking-[0.12em] text-document"
                     >
                         {{ placeholderTitle }}
                     </span>
                     <span
-                        class="max-w-[16rem] text-xs leading-relaxed text-signal-muted"
+                        class="max-w-[15rem] text-[0.7rem] leading-snug text-ash"
                     >
                         {{ placeholderCopy }}
                     </span>
                 </div>
 
-                <div class="absolute top-3 left-3 z-20">
+                <div class="absolute top-2 left-2 z-20">
                     <StatusBadge
                         :label="generation.status_label"
                         :tone="generation.status_tone"
                         :pulse="active"
                     />
                 </div>
-            </div>
 
-            <div class="space-y-3 p-4" :class="compact ? 'sm:p-3.5' : ''">
-                <p
-                    class="line-clamp-2 font-display text-[1.05rem] leading-[1.25] tracking-[-0.015em] text-signal"
-                    :class="compact ? 'text-[0.98rem]' : ''"
-                >
-                    {{ generation.prompt }}
-                </p>
                 <div
-                    class="flex items-center justify-between gap-3 font-mono text-[0.64rem] tracking-[0.08em] text-signal-muted uppercase"
+                    class="absolute right-2 bottom-2 z-20 border border-line bg-void px-1.5 py-1"
                 >
-                    <span class="min-w-0 truncate">
-                        {{ ratioLabel(generation.size) }} ·
-                        {{ generation.quality }}
-                    </span>
-                    <span class="shrink-0 text-signal">
+                    <span
+                        class="ledger text-[0.65rem] leading-none text-document"
+                    >
                         {{
+                            generation.cost.customer_charge_exact ??
                             generation.cost.customer_charge ??
                             (generation.status === 'failed' ? 'No charge' : '—')
                         }}
                     </span>
                 </div>
-                <div
-                    class="flex items-center justify-between gap-3 text-xs text-signal-muted"
+            </div>
+
+            <div
+                class="flex min-w-0 flex-1 flex-col gap-2 px-3 py-3"
+                :class="compact ? 'sm:px-2.5 sm:py-2.5' : 'sm:px-3.5 sm:py-3'"
+            >
+                <p
+                    class="vellum-title line-clamp-2 text-[0.98rem] text-document"
+                    :class="compact ? 'text-[0.9rem]' : ''"
                 >
-                    <span>{{ formatRelative(generation.created_at) }}</span>
-                    <span
-                        class="font-mono text-[0.6rem] tracking-[0.12em] text-signal uppercase transition-opacity group-hover:opacity-100 motion-reduce:transition-none"
-                    >
-                        Open →
+                    {{ generation.prompt }}
+                </p>
+                <div
+                    class="mt-auto flex min-w-0 flex-wrap items-baseline justify-between gap-x-2 gap-y-1 font-mono text-[0.6rem] leading-snug tracking-[0.06em] text-stone"
+                >
+                    <span class="min-w-0 truncate">
+                        {{ ratioLabel(generation.size) }} ·
+                        {{ generation.quality }}
+                    </span>
+                    <span class="shrink-0 text-document">
+                        {{ formatRelative(generation.created_at) }}
                     </span>
                 </div>
             </div>

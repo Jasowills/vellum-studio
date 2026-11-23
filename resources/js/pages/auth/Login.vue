@@ -31,12 +31,13 @@ defineProps<{
 }>();
 
 const inputClass =
-    'h-11 rounded-none border-line bg-paper-deep text-signal placeholder:text-signal-muted dark:bg-paper-deep focus-visible:border-signal focus-visible:ring-signal/25';
-const labelClass =
-    'font-mono text-[0.68rem] font-normal tracking-[0.16em] text-signal uppercase';
+    'vellum-input focus-ring h-11 rounded-none pr-10 pl-3 text-sm text-document';
+const labelClass = 'text-xs font-medium text-document';
 const submitClass =
-    'mt-1 h-11 w-full border border-signal bg-signal font-mono text-[0.72rem] tracking-[0.16em] text-signal-invert uppercase hover:bg-signal/85 focus-visible:ring-signal disabled:opacity-60';
-const errorClass = '[&_p]:text-signal!';
+    'vellum-button focus-ring mt-1 h-11 w-full rounded-none text-sm';
+const errorClass = '[&_p]:text-document!';
+const quietLinkClass =
+    '!text-document !decoration-line underline-offset-4 hover:!decoration-document focus-ring text-xs';
 </script>
 
 <template>
@@ -45,9 +46,12 @@ const errorClass = '[&_p]:text-signal!';
     <div
         v-if="status"
         role="status"
-        class="mb-6 flex items-start gap-3 border border-line bg-paper px-4 py-3 text-sm leading-relaxed text-signal"
+        class="mb-6 flex items-start gap-3 border border-line bg-raised px-4 py-3 text-sm leading-relaxed text-document"
     >
-        <Check class="mt-0.5 size-4 shrink-0 text-signal" aria-hidden="true" />
+        <Check
+            class="mt-0.5 size-4 shrink-0 text-document"
+            aria-hidden="true"
+        />
         <span>{{ status }}</span>
     </div>
 
@@ -85,7 +89,7 @@ const errorClass = '[&_p]:text-signal!';
                 >
                     <AlertCircle
                         v-if="errors.email"
-                        class="mt-0.5 size-3.5 shrink-0 text-signal"
+                        class="mt-0.5 size-3.5 shrink-0 text-document"
                         aria-hidden="true"
                     />
                     <InputError :message="errors.email" />
@@ -98,7 +102,7 @@ const errorClass = '[&_p]:text-signal!';
                     <TextLink
                         v-if="canResetPassword"
                         :href="request()"
-                        class="font-sans text-xs tracking-normal text-signal normal-case"
+                        :class="quietLinkClass"
                         :tabindex="5"
                     >
                         Forgot your password?
@@ -123,7 +127,7 @@ const errorClass = '[&_p]:text-signal!';
                 >
                     <AlertCircle
                         v-if="errors.password"
-                        class="mt-0.5 size-3.5 shrink-0 text-signal"
+                        class="mt-0.5 size-3.5 shrink-0 text-document"
                         aria-hidden="true"
                     />
                     <InputError :message="errors.password" />
@@ -133,13 +137,13 @@ const errorClass = '[&_p]:text-signal!';
             <div class="flex items-center">
                 <Label
                     for="remember"
-                    class="flex cursor-pointer items-center gap-3 font-sans text-sm font-normal tracking-normal text-signal-muted normal-case"
+                    class="flex cursor-pointer items-center gap-3 text-sm font-normal text-ash"
                 >
                     <Checkbox
                         id="remember"
                         name="remember"
                         :tabindex="3"
-                        class="size-4 border-line bg-paper-deep data-[state=checked]:border-signal data-[state=checked]:bg-signal data-[state=checked]:text-signal-invert"
+                        class="focus-ring size-4 shrink-0 rounded-none border-edge-strong bg-void shadow-none data-[state=checked]:border-document data-[state=checked]:bg-document data-[state=checked]:text-void"
                     />
                     <span>Remember me</span>
                 </Label>
@@ -159,11 +163,9 @@ const errorClass = '[&_p]:text-signal!';
         </div>
 
         <!-- @chisel-registration -->
-        <div
-            class="border-t border-line pt-5 text-center text-sm text-signal-muted"
-        >
+        <div class="border-t border-line pt-5 text-center text-sm text-ash">
             Don't have an account?
-            <TextLink :href="register()" :tabindex="5" class="text-signal">
+            <TextLink :href="register()" :tabindex="5" :class="quietLinkClass">
                 Sign up
             </TextLink>
         </div>

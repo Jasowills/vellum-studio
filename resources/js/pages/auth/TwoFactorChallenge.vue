@@ -1,4 +1,6 @@
 <script setup lang="ts">
+defineOptions({ inheritAttrs: false });
+
 import { Form, Head, setLayoutProps } from '@inertiajs/vue3';
 import { computed, ref, watchEffect } from 'vue';
 import { AlertCircle } from '@lucide/vue';
@@ -50,14 +52,15 @@ const toggleRecoveryMode = (clearErrors: () => void): void => {
 };
 
 const inputClass =
-    'h-11 rounded-none border-line bg-paper-deep text-signal placeholder:text-signal-muted dark:bg-paper-deep focus-visible:border-signal focus-visible:ring-signal/25';
-const labelClass =
-    'font-mono text-[0.68rem] font-normal tracking-[0.16em] text-signal uppercase';
+    'vellum-input focus-ring h-11 rounded-none pr-10 pl-3 text-sm text-document';
+const labelClass = 'text-xs font-medium text-document';
 const submitClass =
-    'mt-1 h-11 w-full border border-signal bg-signal font-mono text-[0.72rem] tracking-[0.16em] text-signal-invert uppercase hover:bg-signal/85 focus-visible:ring-signal disabled:opacity-60';
-const errorClass = '[&_p]:text-signal!';
+    'vellum-button focus-ring mt-1 h-11 w-full rounded-none text-sm';
+const errorClass = '[&_p]:text-document!';
 const toggleClass =
-    'text-signal underline decoration-signal-line underline-offset-4 transition-colors hover:decoration-signal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal';
+    'focus-ring text-sm text-document underline decoration-line underline-offset-4 transition-colors hover:decoration-document';
+const otpSlotClass =
+    'vellum-input focus-ring !rounded-none size-11 bg-void text-base text-document data-[active=true]:border-document data-[active=true]:ring-document/25';
 </script>
 
 <template>
@@ -88,12 +91,12 @@ const toggleClass =
                             :aria-invalid="Boolean(errors.code)"
                             aria-describedby="otp-error"
                         >
-                            <InputOTPGroup>
+                            <InputOTPGroup class="!gap-1">
                                 <InputOTPSlot
                                     v-for="index in 6"
                                     :key="index"
                                     :index="index - 1"
-                                    class="size-11 border-line bg-paper-deep text-signal first:border-l data-[active=true]:border-signal data-[active=true]:ring-signal/25"
+                                    :class="otpSlotClass"
                                 />
                             </InputOTPGroup>
                         </InputOTP>
@@ -106,7 +109,7 @@ const toggleClass =
                     >
                         <AlertCircle
                             v-if="errors.code"
-                            class="mt-0.5 size-3.5 shrink-0 text-signal"
+                            class="mt-0.5 size-3.5 shrink-0 text-document"
                             aria-hidden="true"
                         />
                         <InputError :message="errors.code" />
@@ -122,7 +125,7 @@ const toggleClass =
                     {{ processing ? 'Verifying...' : 'Continue' }}
                 </Button>
                 <div
-                    class="border-t border-line pt-5 text-center text-sm text-signal-muted"
+                    class="border-t border-line pt-5 text-center text-sm text-ash"
                 >
                     <span>or you can </span>
                     <button
@@ -166,7 +169,7 @@ const toggleClass =
                     >
                         <AlertCircle
                             v-if="errors.recovery_code"
-                            class="mt-0.5 size-3.5 shrink-0 text-signal"
+                            class="mt-0.5 size-3.5 shrink-0 text-document"
                             aria-hidden="true"
                         />
                         <InputError :message="errors.recovery_code" />
@@ -183,7 +186,7 @@ const toggleClass =
                 </Button>
 
                 <div
-                    class="border-t border-line pt-5 text-center text-sm text-signal-muted"
+                    class="border-t border-line pt-5 text-center text-sm text-ash"
                 >
                     <span>or you can </span>
                     <button

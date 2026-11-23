@@ -22,12 +22,13 @@ defineProps<{
 }>();
 
 const inputClass =
-    'h-11 rounded-none border-line bg-paper-deep text-signal placeholder:text-signal-muted dark:bg-paper-deep focus-visible:border-signal focus-visible:ring-signal/25';
-const labelClass =
-    'font-mono text-[0.68rem] font-normal tracking-[0.16em] text-signal uppercase';
+    'vellum-input focus-ring h-11 rounded-none pr-10 pl-3 text-sm text-document';
+const labelClass = 'text-xs font-medium text-document';
 const submitClass =
-    'mt-2 h-11 w-full border border-signal bg-signal font-mono text-[0.72rem] tracking-[0.16em] text-signal-invert uppercase hover:bg-signal/85 focus-visible:ring-signal disabled:opacity-60';
-const errorClass = '[&_p]:text-signal!';
+    'vellum-button focus-ring mt-2 h-11 w-full rounded-none text-sm';
+const errorClass = '[&_p]:text-document!';
+const quietLinkClass =
+    '!text-document !decoration-line underline-offset-4 hover:!decoration-document focus-ring text-xs';
 </script>
 
 <template>
@@ -36,9 +37,12 @@ const errorClass = '[&_p]:text-signal!';
     <div
         v-if="status"
         role="status"
-        class="mb-6 flex items-start gap-3 border border-line bg-paper px-4 py-3 text-sm leading-relaxed text-signal"
+        class="mb-6 flex items-start gap-3 border border-line bg-raised px-4 py-3 text-sm leading-relaxed text-document"
     >
-        <Check class="mt-0.5 size-4 shrink-0 text-signal" aria-hidden="true" />
+        <Check
+            class="mt-0.5 size-4 shrink-0 text-document"
+            aria-hidden="true"
+        />
         <span>{{ status }}</span>
     </div>
 
@@ -65,7 +69,7 @@ const errorClass = '[&_p]:text-signal!';
                 >
                     <AlertCircle
                         v-if="errors.email"
-                        class="mt-0.5 size-3.5 shrink-0 text-signal"
+                        class="mt-0.5 size-3.5 shrink-0 text-document"
                         aria-hidden="true"
                     />
                     <InputError :message="errors.email" />
@@ -90,11 +94,9 @@ const errorClass = '[&_p]:text-signal!';
             </div>
         </Form>
 
-        <div
-            class="border-t border-line pt-5 text-center text-sm text-signal-muted"
-        >
+        <div class="border-t border-line pt-5 text-center text-sm text-ash">
             <span>Or, return to </span>
-            <TextLink :href="login()" class="text-signal">log in</TextLink>
+            <TextLink :href="login()" :class="quietLinkClass">log in</TextLink>
         </div>
     </div>
 </template>

@@ -26,12 +26,11 @@ const props = defineProps<{
 const inputEmail = ref(props.email);
 
 const inputClass =
-    'h-11 rounded-none border-line bg-paper-deep text-signal placeholder:text-signal-muted dark:bg-paper-deep focus-visible:border-signal focus-visible:ring-signal/25';
-const labelClass =
-    'font-mono text-[0.68rem] font-normal tracking-[0.16em] text-signal uppercase';
+    'vellum-input focus-ring h-11 rounded-none pr-10 pl-3 text-sm text-document';
+const labelClass = 'text-xs font-medium text-document';
 const submitClass =
-    'mt-1 h-11 w-full border border-signal bg-signal font-mono text-[0.72rem] tracking-[0.16em] text-signal-invert uppercase hover:bg-signal/85 focus-visible:ring-signal disabled:opacity-60';
-const errorClass = '[&_p]:text-signal!';
+    'vellum-button focus-ring mt-1 h-11 w-full rounded-none text-sm';
+const errorClass = '[&_p]:text-document!';
 </script>
 
 <template>
@@ -53,7 +52,7 @@ const errorClass = '[&_p]:text-signal!';
                     autocomplete="email"
                     v-model="inputEmail"
                     readonly
-                    :class="[inputClass, 'text-signal-muted']"
+                    :class="[inputClass, 'text-ash']"
                     :aria-invalid="Boolean(errors.email)"
                     aria-describedby="email-error"
                 />
@@ -65,7 +64,7 @@ const errorClass = '[&_p]:text-signal!';
                 >
                     <AlertCircle
                         v-if="errors.email"
-                        class="mt-0.5 size-3.5 shrink-0 text-signal"
+                        class="mt-0.5 size-3.5 shrink-0 text-document"
                         aria-hidden="true"
                     />
                     <InputError :message="errors.email" />
@@ -93,7 +92,7 @@ const errorClass = '[&_p]:text-signal!';
                 >
                     <AlertCircle
                         v-if="errors.password"
-                        class="mt-0.5 size-3.5 shrink-0 text-signal"
+                        class="mt-0.5 size-3.5 shrink-0 text-document"
                         aria-hidden="true"
                     />
                     <InputError :message="errors.password" />
@@ -122,7 +121,7 @@ const errorClass = '[&_p]:text-signal!';
                 >
                     <AlertCircle
                         v-if="errors.password_confirmation"
-                        class="mt-0.5 size-3.5 shrink-0 text-signal"
+                        class="mt-0.5 size-3.5 shrink-0 text-document"
                         aria-hidden="true"
                     />
                     <InputError :message="errors.password_confirmation" />

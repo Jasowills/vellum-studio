@@ -21,10 +21,7 @@ let renderer: Three.WebGLRenderer | null = null;
 let scene: Three.Scene | null = null;
 let camera: Three.PerspectiveCamera | null = null;
 let group: Three.Group | null = null;
-let geometry: Three.BufferGeometry | null = null;
-let material: Three.PointsMaterial | null = null;
-let lineGeometry: Three.BufferGeometry | null = null;
-let lineMaterial: Three.LineBasicMaterial | null = null;
+let sweep: Three.Mesh | null = null;
 let resizeObserver: ResizeObserver | null = null;
 let intersectionObserver: IntersectionObserver | null = null;
 let animationFrame = 0;
@@ -32,9 +29,13 @@ let running = false;
 let onScreen = true;
 let elapsed = 0;
 let lastFrame = 0;
-let bases = new Float32Array(0);
-let pointAttribute: Three.BufferAttribute | null = null;
-let lineAttribute: Three.BufferAttribute | null = null;
+let pointerX = 0;
+let pointerY = 0;
+let targetX = 0;
+let targetY = 0;
+
+const geometries: Three.BufferGeometry[] = [];
+const materials: Three.Material[] = [];
 
 function webGLAvailable(): boolean {
     if (typeof document === 'undefined') {
@@ -57,49 +58,22 @@ function lowPower(): boolean {
     }
 
     const nav = navigator as Navigator & { deviceMemory?: number };
-    const cores = nav.hardwareConcurrency ?? 4;
-    const memory = nav.deviceMemory ?? 4;
-
-    return cores <= 4 || memory <= 4;
+    return (nav.hardwareConcurrency ?? 4) <= 4 || (nav.deviceMemory ?? 4) <= 4;
 }
 
-function updateSignal(time: number): void {
-    if (!pointAttribute || !lineAttribute) {
+function update(time: number, delta: number): void {
+    if (!group || !sweep) {
         return;
     }
 
-    const pointCount = pointAttribute.count;
+    targetX += (pointerX - targetX) * Math.min(1, delta * 2.4);
+    targetY += (pointerY - targetY) * Math.min(1, delta * 2.4);
 
-    for (let index = 0; index < pointCount; index += 1) {
-        const x = bases[index * 2] ?? 0;
-        const y = bases[index * 2 + 1] ?? 0;
-        const radius = Math.sqrt(x * x + y * y);
-        const envelope = Math.exp(-radius * 1.12);
-        const primary = Math.sin(radius * 9.2 - time * 1.25) * 0.3 * envelope;
-        const interference =
-            Math.sin(x * 4.6 + time * 0.46) *
-            Math.cos(y * 3.8 - time * 0.32) *
-            0.075;
-        pointAttribute.setZ(index, primary + interference);
-    }
-
-    pointAttribute.needsUpdate = true;
-
-    const lineCount = lineAttribute.count;
-
-    for (let index = 0; index < lineCount; index += 1) {
-        const x = -1.4 + (index / (lineCount - 1)) * 2.8;
-        const envelope = Math.exp(-Math.abs(x) * 0.72);
-        const y = Math.sin(x * 4.8 - time * 1.1) * 0.105 * envelope;
-        lineAttribute.setXYZ(index, x, y, 0.05);
-    }
-
-    lineAttribute.needsUpdate = true;
-
-    if (group) {
-        group.rotation.y = Math.sin(time * 0.18) * 0.2;
-        group.rotation.x = -0.14 + Math.sin(time * 0.11) * 0.035;
-    }
+    const drift = Math.sin(time * 0.22) * 0.055;
+    group.rotation.y = targetX * 0.19 + drift;
+    group.rotation.x = -targetY * 0.11 + Math.sin(time * 0.16) * 0.018;
+    group.position.y = Math.sin(time * 0.28) * 0.025;
+    sweep.position.y = Math.sin(time * 0.52) * 1.08;
 }
 
 function renderFrame(now: number): void {
@@ -110,7 +84,7 @@ function renderFrame(now: number): void {
     const delta = Math.min((now - lastFrame) / 1000, 0.05);
     lastFrame = now;
     elapsed += delta;
-    updateSignal(elapsed);
+    update(elapsed, delta);
     renderer.render(scene, camera);
     animationFrame = window.requestAnimationFrame(renderFrame);
 }
@@ -156,6 +130,21 @@ function handleVisibility(): void {
     );
 }
 
+function handlePointer(event: PointerEvent): void {
+    if (!host.value) {
+        return;
+    }
+
+    const rect = host.value.getBoundingClientRect();
+    pointerX = ((event.clientX - rect.left) / Math.max(rect.width, 1)) * 2 - 1;
+    pointerY = ((event.clientY - rect.top) / Math.max(rect.height, 1)) * 2 - 1;
+}
+
+function clearPointer(): void {
+    pointerX = 0;
+    pointerY = 0;
+}
+
 async function initialise(): Promise<void> {
     if (!host.value || !webGLAvailable()) {
         return;
@@ -175,64 +164,110 @@ async function initialise(): Promise<void> {
         }
 
         scene = new three.Scene();
-        camera = new three.PerspectiveCamera(42, 1, 0.1, 20);
-        camera.position.set(0, 0, 2.9);
+        camera = new three.PerspectiveCamera(38, 1, 0.1, 24);
+        camera.position.set(0, 0.06, 4.35);
 
         group = new three.Group();
         scene.add(group);
 
-        const columns = compact ? 43 : 67;
-        const rows = compact ? 23 : 35;
-        const pointCount = columns * rows;
-        const positions = new Float32Array(pointCount * 3);
-        bases = new Float32Array(pointCount * 2);
+        const keyLight = new three.DirectionalLight(0xffffff, 2.6);
+        keyLight.position.set(-2.4, 3.2, 4.2);
+        scene.add(keyLight);
+        const rimLight = new three.DirectionalLight(0xffffff, 0.9);
+        rimLight.position.set(2.6, -0.8, 2.2);
+        scene.add(rimLight);
+        scene.add(new three.AmbientLight(0xffffff, 0.26));
 
-        for (let row = 0; row < rows; row += 1) {
-            for (let column = 0; column < columns; column += 1) {
-                const index = row * columns + column;
-                const x = (column / (columns - 1) - 0.5) * 2.7;
-                const y = (row / (rows - 1) - 0.5) * 1.75;
-                bases[index * 2] = x;
-                bases[index * 2 + 1] = y;
-                positions[index * 3] = x;
-                positions[index * 3 + 1] = y;
-                positions[index * 3 + 2] = 0;
-            }
-        }
-
-        geometry = new three.BufferGeometry();
-        pointAttribute = new three.BufferAttribute(positions, 3);
-        geometry.setAttribute('position', pointAttribute);
-
-        material = new three.PointsMaterial({
-            color: 0xf4f4f4,
-            size: compact ? 0.014 : 0.018,
-            sizeAttenuation: true,
+        const veilGeometry = new three.PlaneGeometry(2.55, 2.85);
+        const veilMaterial = new three.MeshBasicMaterial({
+            color: 0xffffff,
             transparent: true,
-            opacity: 0.82,
+            opacity: 0.028,
+            side: three.DoubleSide,
             depthWrite: false,
         });
+        const veil = new three.Mesh(veilGeometry, veilMaterial);
+        veil.position.z = -0.24;
+        veil.rotation.y = -0.12;
+        group.add(veil);
+        geometries.push(veilGeometry);
+        materials.push(veilMaterial);
 
-        group.add(new three.Points(geometry, material));
+        const armGeometry = new three.CylinderGeometry(
+            0.028,
+            0.135,
+            2.62,
+            3,
+            5,
+            false,
+        );
+        geometries.push(armGeometry);
 
-        const lineCount = compact ? 72 : 128;
-        const linePositions = new Float32Array(lineCount * 3);
-        lineGeometry = new three.BufferGeometry();
-        lineAttribute = new three.BufferAttribute(linePositions, 3);
-        lineGeometry.setAttribute('position', lineAttribute);
-        lineMaterial = new three.LineBasicMaterial({
-            color: 0xf4f4f4,
+        const armMaterial = new three.MeshStandardMaterial({
+            color: 0xf5f5f5,
+            roughness: 0.48,
+            metalness: 0.02,
+            flatShading: true,
+        });
+        materials.push(armMaterial);
+
+        const edgeMaterial = new three.LineBasicMaterial({
+            color: 0xffffff,
             transparent: true,
             opacity: 0.42,
         });
-        group.add(new three.Line(lineGeometry, lineMaterial));
+        materials.push(edgeMaterial);
+
+        const arms = [
+            { x: -0.66, z: 0.02, rotate: 0.4, yaw: -0.2 },
+            { x: 0.66, z: -0.02, rotate: -0.4, yaw: 0.2 },
+        ];
+
+        for (const arm of arms) {
+            const mesh = new three.Mesh(armGeometry, armMaterial);
+            mesh.position.set(arm.x, 0.08, arm.z);
+            mesh.rotation.set(0.04, arm.yaw, arm.rotate);
+            group.add(mesh);
+
+            const edgeGeometry = new three.EdgesGeometry(armGeometry, 18);
+            geometries.push(edgeGeometry);
+            const edges = new three.LineSegments(edgeGeometry, edgeMaterial);
+            edges.position.copy(mesh.position);
+            edges.rotation.copy(mesh.rotation);
+            group.add(edges);
+        }
+
+        const baseGeometry = new three.BoxGeometry(1.7, 0.014, 0.014);
+        const baseMaterial = new three.MeshBasicMaterial({
+            color: 0xffffff,
+            transparent: true,
+            opacity: 0.3,
+        });
+        const base = new three.Mesh(baseGeometry, baseMaterial);
+        base.position.y = -1.17;
+        group.add(base);
+        geometries.push(baseGeometry);
+        materials.push(baseMaterial);
+
+        const sweepGeometry = new three.PlaneGeometry(2.05, 0.006);
+        const sweepMaterial = new three.MeshBasicMaterial({
+            color: 0xffffff,
+            transparent: true,
+            opacity: 0.32,
+            depthWrite: false,
+        });
+        sweep = new three.Mesh(sweepGeometry, sweepMaterial);
+        sweep.position.z = 0.26;
+        group.add(sweep);
+        geometries.push(sweepGeometry);
+        materials.push(sweepMaterial);
 
         renderer = new three.WebGLRenderer({
             alpha: true,
-            antialias: false,
+            antialias: true,
             powerPreference: 'low-power',
         });
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.6));
         renderer.setClearColor(0x000000, 0);
         renderer.domElement.setAttribute('aria-hidden', 'true');
         renderer.domElement.style.width = '100%';
@@ -241,7 +276,7 @@ async function initialise(): Promise<void> {
         host.value.appendChild(renderer.domElement);
 
         resize();
-        updateSignal(0);
+        update(0, 1);
         renderer.render(scene, camera);
         ready.value = true;
 
@@ -259,10 +294,12 @@ async function initialise(): Promise<void> {
         document.addEventListener('visibilitychange', handleVisibility);
 
         if (!staticRender) {
+            host.value.addEventListener('pointermove', handlePointer);
+            host.value.addEventListener('pointerleave', clearPointer);
             handleVisibility();
         }
     } catch {
-        // Fallback artwork stays visible when WebGL or Three.js is unavailable.
+        /* The inline V remains visible when WebGL or Three.js is unavailable. */
     }
 }
 
@@ -277,15 +314,15 @@ onBeforeUnmount(() => {
     resizeObserver?.disconnect();
     intersectionObserver?.disconnect();
     document.removeEventListener('visibilitychange', handleVisibility);
+    host.value?.removeEventListener('pointermove', handlePointer);
+    host.value?.removeEventListener('pointerleave', clearPointer);
 
     if (renderer?.domElement.parentNode) {
         renderer.domElement.parentNode.removeChild(renderer.domElement);
     }
 
-    geometry?.dispose();
-    material?.dispose();
-    lineGeometry?.dispose();
-    lineMaterial?.dispose();
+    geometries.forEach((geometry) => geometry.dispose());
+    materials.forEach((material) => material.dispose());
     renderer?.dispose();
     renderer?.forceContextLoss();
 });
@@ -297,87 +334,32 @@ onBeforeUnmount(() => {
         class="relative isolate overflow-hidden"
         :class="props.class"
         role="img"
-        :aria-label="
-            props.mode === 'hero'
-                ? 'A dimensional field of points resolving into a waveform'
-                : 'A compact signal waveform'
-        "
+        aria-label="A geometric V sculpture formed from two faceted white planes."
     >
         <svg
-            v-show="!ready"
-            viewBox="0 0 600 420"
-            preserveAspectRatio="xMidYMid slice"
-            class="absolute inset-0 h-full w-full text-signal"
+            v-if="!ready"
+            class="absolute inset-0 size-full text-document"
+            viewBox="0 0 600 500"
+            fill="none"
             aria-hidden="true"
+            focusable="false"
         >
-            <defs>
-                <pattern
-                    id="signal-grid"
-                    width="40"
-                    height="40"
-                    patternUnits="userSpaceOnUse"
-                >
-                    <path
-                        d="M40 0H0v40"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-opacity=".08"
-                    />
-                </pattern>
-                <radialGradient id="signal-fade">
-                    <stop
-                        offset="0"
-                        stop-color="currentColor"
-                        stop-opacity=".85"
-                    />
-                    <stop
-                        offset="1"
-                        stop-color="currentColor"
-                        stop-opacity="0"
-                    />
-                </radialGradient>
-            </defs>
-            <rect width="600" height="420" fill="url(#signal-grid)" />
-            <ellipse
-                cx="300"
-                cy="210"
-                rx="190"
-                ry="130"
-                fill="url(#signal-fade)"
-                opacity=".1"
-            />
-            <circle
-                cx="300"
-                cy="210"
-                r="118"
-                fill="none"
-                stroke="currentColor"
-                stroke-opacity=".22"
-            />
-            <circle
-                cx="300"
-                cy="210"
-                r="72"
-                fill="none"
-                stroke="currentColor"
-                stroke-opacity=".16"
+            <path
+                d="M98 76h78l124 334h-76L98 76Z"
+                fill="currentColor"
+                fill-opacity=".72"
             />
             <path
-                d="M40 210c52 0 52-72 104-72s52 144 104 144 52-216 104-216 52 288 104 288 52-144 104-144"
-                fill="none"
-                stroke="currentColor"
-                stroke-opacity=".72"
-                stroke-width="1.4"
+                d="M424 76h78L378 410h-76L424 76Z"
+                fill="currentColor"
+                fill-opacity=".72"
             />
-            <g fill="currentColor" fill-opacity=".5">
-                <circle
-                    v-for="n in 18"
-                    :key="n"
-                    :cx="70 + n * 26"
-                    :cy="210 + Math.sin(n * 0.9) * 46"
-                    r="1.6"
-                />
-            </g>
+            <path
+                d="M176 76h24l100 334h-22L176 76Z"
+                fill="#fff"
+                fill-opacity=".22"
+            />
+            <path d="M76 414h448" stroke="currentColor" stroke-opacity=".28" />
         </svg>
     </div>
 </template>

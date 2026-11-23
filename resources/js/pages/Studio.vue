@@ -1,7 +1,10 @@
 <script setup lang="ts">
+defineOptions({ inheritAttrs: false });
+
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import {
     ArrowRight,
+    ArrowUpRight,
     ChevronDown,
     ExternalLink,
     Link2,
@@ -59,6 +62,10 @@ type FormFields = {
 };
 
 const props = defineProps<Props>();
+
+function exactMoney(nanos: number): string {
+    return `$${(nanos / 1e9).toFixed(9)}`;
+}
 
 function initialValues(prefill: StudioPrefill | null): FormFields {
     return {
@@ -238,6 +245,7 @@ const featuredMetrics = computed(() => {
         {
             label: 'Charge',
             value:
+                generation.cost.customer_charge_exact ??
                 generation.cost.customer_charge ??
                 (generation.status === 'failed' ? 'No charge' : 'Pending'),
         },
@@ -513,620 +521,555 @@ onBeforeUnmount(() => {
 <template>
     <Head title="Studio" />
 
-    <div class="space-y-8 bg-background pb-28 text-signal lg:pb-2">
-        <header
-            class="flex flex-col gap-5 border-b border-line pb-6 sm:flex-row sm:items-end sm:justify-between"
-        >
-            <div>
-                <p class="eyebrow flex items-center gap-3">
-                    <span class="h-px w-8 bg-signal" aria-hidden="true" />
-                    Studio / instrument 01
-                </p>
-                <h1
-                    class="display-title mt-4 max-w-[14ch] text-[clamp(2.4rem,4.6vw,3.75rem)] text-signal"
-                >
-                    Make an image.
-                </h1>
-            </div>
-            <p class="max-w-sm text-sm leading-relaxed text-signal-muted">
-                Compose a prompt. The estimate stays live; the charge is settled
-                only when the plate arrives.
-            </p>
-        </header>
-
-        <div
-            class="grid min-w-0 items-start gap-8 lg:grid-cols-[minmax(0,1fr)_23rem] lg:gap-10 xl:grid-cols-[minmax(0,1fr)_25rem]"
-        >
-            <section
-                class="order-2 min-w-0 lg:order-1"
-                aria-labelledby="canvas-heading"
+    <div class="min-h-svh bg-void pb-10 text-document">
+        <div class="vellum-shell max-w-[1180px] pt-6">
+            <header
+                class="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-4"
             >
+                <div class="flex items-baseline gap-3">
+                    <h1 class="text-base font-medium text-document">Studio</h1>
+                    <p class="vellum-meta">/ new plate</p>
+                </div>
+                <p class="vellum-meta" role="status">
+                    {{
+                        pricing
+                            ? 'Live estimate · Pixelforge connected'
+                            : 'Submission paused · pricing unavailable'
+                    }}
+                </p>
+            </header>
+
+            <section class="mt-6" aria-labelledby="canvas-heading">
                 <div
-                    class="flex flex-wrap items-end justify-between gap-3 border-b border-line pb-3"
+                    class="flex flex-wrap items-end justify-between gap-3 pb-3"
                 >
                     <div>
-                        <p class="eyebrow">Canvas / latest output</p>
+                        <p class="vellum-meta">Canvas</p>
                         <h2
                             id="canvas-heading"
-                            class="mt-2 font-display text-3xl tracking-[-0.03em] text-signal"
+                            class="mt-1 text-sm font-medium text-document"
                         >
-                            Recent plate
+                            {{
+                                featuredActive ? 'Working now' : 'Latest output'
+                            }}
                         </h2>
                     </div>
                     <Link
                         href="/library"
-                        class="link-underline font-mono text-[0.62rem] tracking-[0.14em] text-signal-muted uppercase"
+                        class="focus-ring inline-flex items-center gap-2 text-sm text-ash transition-colors hover:text-document"
                     >
-                        Full library
+                        Library
+                        <ArrowUpRight class="size-3.5" aria-hidden="true" />
                     </Link>
                 </div>
 
                 <div
                     v-if="featured"
-                    class="mt-5 border border-line bg-paper-deep"
+                    class="relative min-h-[22rem] overflow-hidden border border-line bg-void sm:min-h-[30rem] lg:min-h-[56vh]"
                 >
                     <div
-                        class="relative flex min-h-[20rem] items-center justify-center overflow-hidden bg-paper-deep sm:min-h-[26rem] lg:min-h-[32rem]"
+                        class="vellum-grid pointer-events-none absolute inset-0 opacity-40"
+                        aria-hidden="true"
+                    />
+                    <img
+                        v-if="featuredImageReady"
+                        :src="featured.image.url ?? undefined"
+                        :alt="featuredAlt"
+                        loading="lazy"
+                        decoding="async"
+                        class="absolute inset-0 z-10 size-full object-contain p-5 sm:p-10"
+                        @error="featuredImageFailed = true"
+                    />
+                    <div
+                        v-else
+                        class="absolute inset-0 z-10 flex flex-col items-center justify-center px-6 py-16 text-center"
+                        aria-live="polite"
+                        aria-atomic="true"
                     >
-                        <div
-                            class="signal-grid pointer-events-none absolute inset-0 opacity-40"
+                        <svg
+                            viewBox="0 0 120 120"
+                            class="size-20 text-edge-strong"
+                            fill="none"
                             aria-hidden="true"
-                        />
-                        <img
-                            v-if="featuredImageReady"
-                            :src="featured.image.url ?? undefined"
-                            :alt="featuredAlt"
-                            loading="lazy"
-                            decoding="async"
-                            class="relative z-10 max-h-[32rem] w-full object-contain grayscale"
-                            @error="featuredImageFailed = true"
-                        />
-                        <div
-                            v-else
-                            class="relative z-10 flex max-w-md flex-col items-center gap-4 px-6 py-12 text-center"
-                            aria-live="polite"
-                            aria-atomic="true"
                         >
-                            <span
-                                class="font-display text-5xl leading-none text-signal-faint"
-                                aria-hidden="true"
-                            >
-                                {{ featuredActive ? '◌' : '×' }}
-                            </span>
-                            <p
-                                class="font-mono text-[0.65rem] tracking-[0.18em] text-signal-muted uppercase"
-                            >
-                                {{ featuredMessage }}
-                            </p>
-                            <p
-                                class="text-sm leading-relaxed text-signal-muted"
-                            >
-                                {{ featuredCopy }}
-                            </p>
-                        </div>
-
-                        <div class="absolute top-4 left-4 z-20">
-                            <StatusBadge
-                                :label="featured.status_label"
-                                :tone="featured.status_tone"
-                                :pulse="featuredActive"
+                            <path
+                                d="M16 18h24l20 62 20-62h24L66 106H54L16 18Z"
+                                stroke="currentColor"
+                                stroke-width="2"
                             />
-                        </div>
+                            <path
+                                d="M10 112h100"
+                                stroke="currentColor"
+                                stroke-opacity=".45"
+                            />
+                        </svg>
+                        <p class="vellum-title mt-5 text-2xl text-document">
+                            {{ featuredMessage }}
+                        </p>
+                        <p
+                            class="mt-3 max-w-md text-sm leading-relaxed text-ash"
+                        >
+                            {{ featuredCopy }}
+                        </p>
+                    </div>
+
+                    <div class="absolute top-4 left-4 z-20">
+                        <StatusBadge
+                            :label="featured.status_label"
+                            :tone="featured.status_tone"
+                            :pulse="featuredActive"
+                        />
                     </div>
 
                     <div
-                        class="flex flex-wrap items-center justify-between gap-3 border-t border-line px-4 py-4"
+                        class="absolute right-4 bottom-4 left-4 z-20 flex flex-wrap items-end justify-between gap-4 border-t border-line bg-void/85 pt-3 backdrop-blur-[1px]"
                     >
                         <p
-                            class="line-clamp-2 max-w-[42rem] min-w-0 font-display text-lg leading-snug tracking-[-0.015em] text-signal"
+                            class="line-clamp-2 max-w-[46rem] min-w-0 text-sm leading-relaxed text-ash"
                         >
                             {{ featured.prompt }}
                         </p>
                         <Link
                             :href="`/generations/${featured.id}`"
-                            class="focus-ring inline-flex shrink-0 items-center gap-2 font-mono text-[0.62rem] tracking-[0.14em] text-signal uppercase"
+                            class="focus-ring inline-flex shrink-0 items-center gap-2 text-sm text-document"
                         >
                             Open plate
                             <ArrowRight class="size-3.5" aria-hidden="true" />
                         </Link>
                     </div>
-
-                    <dl
-                        class="grid grid-cols-2 gap-px border-t border-line bg-line sm:grid-cols-4"
-                    >
-                        <div
-                            v-for="metric in featuredMetrics"
-                            :key="metric.label"
-                            class="bg-paper px-4 py-3"
-                        >
-                            <dt class="eyebrow">{{ metric.label }}</dt>
-                            <dd
-                                class="mt-1 truncate font-mono text-[0.7rem] tracking-[0.06em] text-signal"
-                            >
-                                {{ metric.value }}
-                            </dd>
-                        </div>
-                    </dl>
                 </div>
 
                 <div
                     v-else
-                    class="relative mt-5 flex min-h-[20rem] flex-col items-center justify-center overflow-hidden border border-dashed border-line bg-paper px-6 py-12 text-center sm:min-h-[26rem] lg:min-h-[32rem]"
+                    class="relative flex min-h-[22rem] flex-col items-center justify-center overflow-hidden border border-line bg-void px-6 py-16 text-center sm:min-h-[30rem] lg:min-h-[56vh]"
                 >
                     <div
-                        class="signal-grid pointer-events-none absolute inset-0 opacity-40"
+                        class="vellum-grid pointer-events-none absolute inset-0 opacity-40"
                         aria-hidden="true"
                     />
                     <div class="relative z-10 max-w-md">
-                        <p
-                            class="font-display text-4xl tracking-[-0.03em] text-signal"
+                        <svg
+                            viewBox="0 0 120 120"
+                            class="mx-auto size-20 text-edge-strong"
+                            fill="none"
+                            aria-hidden="true"
                         >
-                            The canvas is empty.
+                            <path
+                                d="M16 18h24l20 62 20-62h24L66 106H54L16 18Z"
+                                stroke="currentColor"
+                                stroke-width="2"
+                            />
+                            <path
+                                d="M10 112h100"
+                                stroke="currentColor"
+                                stroke-opacity=".45"
+                            />
+                        </svg>
+                        <p class="vellum-title mt-5 text-2xl text-document">
+                            The canvas is waiting.
                         </p>
-                        <p
-                            class="mt-3 text-sm leading-relaxed text-signal-muted"
-                        >
+                        <p class="mt-3 text-sm leading-relaxed text-ash">
                             Your first image will appear here. Nothing is shown
                             until the provider returns a result.
                         </p>
                     </div>
                 </div>
 
-                <div v-if="recent.length > 0" class="mt-10">
-                    <div
-                        class="flex items-baseline justify-between border-b border-line pb-3"
-                    >
-                        <p class="eyebrow">Archive / most recent</p>
-                        <span
-                            class="font-mono text-[0.6rem] tracking-[0.14em] text-signal-faint uppercase"
-                        >
-                            {{ recent.length }} plates
-                        </span>
-                    </div>
-                    <div class="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                        <GenerationCard
-                            v-for="generation in recent"
-                            :key="generation.id"
-                            :generation="generation"
-                            compact
-                        />
-                    </div>
-                </div>
-            </section>
-
-            <section
-                class="order-1 min-w-0 lg:sticky lg:top-20 lg:order-2 lg:max-h-[calc(100vh-6rem)] lg:self-start lg:overflow-y-auto"
-                aria-labelledby="composer-heading"
-            >
-                <form
-                    id="studio-form"
-                    class="border border-line bg-paper"
-                    novalidate
-                    @submit.prevent="submit"
+                <dl
+                    v-if="featured"
+                    class="mt-px grid grid-cols-2 border border-t-0 border-line bg-elevated sm:grid-cols-4"
                 >
                     <div
-                        class="flex items-start justify-between gap-4 border-b border-line px-5 py-4"
+                        v-for="metric in featuredMetrics"
+                        :key="metric.label"
+                        class="border-line px-4 py-3 sm:border-r sm:last:border-r-0"
                     >
-                        <div>
-                            <p class="eyebrow">Composer / new plate</p>
-                            <h2
-                                id="composer-heading"
-                                class="mt-1 font-display text-2xl tracking-[-0.02em] text-signal"
-                            >
-                                Describe the image.
-                            </h2>
-                        </div>
-                        <span
-                            class="shrink-0 font-mono text-[0.58rem] tracking-[0.14em] text-signal-faint uppercase"
+                        <dt class="vellum-meta">{{ metric.label }}</dt>
+                        <dd
+                            class="mt-1 truncate font-mono text-xs text-document"
                         >
-                            01 / Prompt
-                        </span>
+                            {{ metric.value }}
+                        </dd>
+                    </div>
+                </dl>
+            </section>
+
+            <form
+                id="studio-form"
+                class="mt-6 border border-line bg-elevated"
+                novalidate
+                @submit.prevent="submit"
+            >
+                <div
+                    class="flex flex-wrap items-center justify-between gap-3 border-b border-line px-4 py-3 sm:px-5"
+                >
+                    <div>
+                        <label
+                            for="prompt"
+                            class="text-sm font-medium text-document"
+                        >
+                            Describe the image
+                        </label>
+                        <p class="vellum-meta mt-0.5">
+                            Light, material, mood, composition.
+                        </p>
+                    </div>
+                    <span
+                        id="prompt-count"
+                        class="vellum-meta"
+                        aria-live="polite"
+                    >
+                        {{ characterCount.toLocaleString() }} /
+                        {{ maxPromptCharacters.toLocaleString() }}
+                    </span>
+                </div>
+
+                <div class="space-y-3 px-4 py-4 sm:px-5">
+                    <div
+                        v-if="pricingError"
+                        class="border border-line bg-void px-3 py-2.5 text-xs leading-relaxed text-document"
+                        role="alert"
+                    >
+                        {{ pricingError }}
                     </div>
 
-                    <div class="space-y-5 px-5 py-5">
-                        <div
-                            v-if="pricingError"
-                            class="border border-signal-line bg-paper-deep px-3 py-2.5 text-xs leading-relaxed text-signal"
-                            role="alert"
-                        >
-                            {{ pricingError }}
-                        </div>
-
-                        <div
-                            v-if="prefill"
-                            class="flex items-start justify-between gap-3 border border-line-soft bg-paper-deep px-3 py-2.5"
-                            role="status"
-                        >
-                            <p
-                                class="text-xs leading-relaxed text-signal-muted"
+                    <div
+                        v-if="prefill"
+                        class="flex flex-wrap items-start justify-between gap-3 border border-edge bg-void px-3 py-2.5"
+                        role="status"
+                    >
+                        <p class="text-xs leading-relaxed text-ash">
+                            Setup copied from plate
+                            <Link
+                                :href="`/generations/${prefill.source_id}`"
+                                class="link-underline font-mono text-document"
                             >
-                                Setup copied from plate
-                                <Link
-                                    :href="`/generations/${prefill.source_id}`"
-                                    class="link-underline font-mono text-signal"
-                                >
-                                    {{ prefill.source_id }}
-                                </Link>
-                                . This will be a new generation.
+                                {{ prefill.source_id }}
+                            </Link>
+                            . This will be a new generation.
+                        </p>
+                        <span class="vellum-meta shrink-0">Fresh key</span>
+                    </div>
+
+                    <textarea
+                        id="prompt"
+                        ref="promptField"
+                        v-model="form.prompt"
+                        rows="3"
+                        :maxlength="maxPromptCharacters"
+                        class="vellum-input resize-y bg-void px-4 py-3.5 text-[0.98rem] leading-relaxed text-document sm:text-base"
+                        placeholder="A stone observatory above a sea of cloud at first light."
+                        :aria-describedby="
+                            form.errors.prompt
+                                ? 'prompt-help prompt-count prompt-error'
+                                : 'prompt-help prompt-count'
+                        "
+                        :aria-invalid="form.errors.prompt ? 'true' : undefined"
+                        required
+                    />
+                    <p id="prompt-help" class="vellum-meta">
+                        Up to
+                        {{ maxPromptCharacters.toLocaleString() }} Unicode
+                        characters. The estimate follows every change.
+                    </p>
+                    <p
+                        v-if="form.errors.prompt"
+                        id="prompt-error"
+                        class="border-l border-document pl-3 text-xs leading-relaxed text-document"
+                        role="alert"
+                    >
+                        {{ form.errors.prompt }}
+                    </p>
+                </div>
+
+                <div
+                    class="flex flex-wrap items-center gap-2 border-t border-line px-4 py-3 sm:px-5"
+                >
+                    <span class="vellum-meta mr-1">Try</span>
+                    <button
+                        v-for="suggestion in suggestions"
+                        :key="suggestion"
+                        type="button"
+                        class="focus-ring border border-edge px-2.5 py-1.5 text-left text-xs text-ash transition-colors hover:border-line hover:text-document motion-reduce:transition-none"
+                        @click="useSuggestion(suggestion)"
+                    >
+                        {{ suggestion.split(',')[0] }}
+                    </button>
+                </div>
+
+                <button
+                    type="button"
+                    class="focus-ring flex w-full items-center justify-between gap-4 border-t border-line px-4 py-3 text-left sm:px-5"
+                    :aria-expanded="advancedOpen"
+                    aria-controls="advanced-settings"
+                    @click="advancedOpen = !advancedOpen"
+                >
+                    <span class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                        <span class="text-sm font-medium text-document">
+                            Settings
+                        </span>
+                        <span class="vellum-meta">
+                            {{ currentSizeLabel }} ·
+                            {{ qualityLabel(form.quality) }} ·
+                            {{ form.reference_images.length }} references
+                        </span>
+                    </span>
+                    <ChevronDown
+                        class="size-4 shrink-0 text-ash transition-transform duration-200 motion-reduce:transition-none"
+                        :class="advancedOpen ? 'rotate-180' : ''"
+                        aria-hidden="true"
+                    />
+                </button>
+
+                <div
+                    v-show="advancedOpen"
+                    id="advanced-settings"
+                    class="space-y-6 border-t border-line bg-void px-4 py-5 sm:px-5"
+                >
+                    <div>
+                        <div
+                            class="flex flex-wrap items-baseline justify-between gap-3"
+                        >
+                            <p class="text-sm font-medium text-document">
+                                Reference URLs
                             </p>
-                            <span
-                                class="shrink-0 font-mono text-[0.55rem] tracking-[0.12em] text-signal-faint uppercase"
-                            >
-                                Fresh key
-                            </span>
+                            <p class="vellum-meta">
+                                {{ form.reference_images.length }} /
+                                {{ maxReferenceImages }}
+                            </p>
                         </div>
-
-                        <div>
-                            <div
-                                class="flex items-baseline justify-between gap-3"
-                            >
-                                <label
-                                    for="prompt"
-                                    class="font-mono text-[0.62rem] tracking-[0.18em] text-signal-muted uppercase"
-                                >
-                                    Image prompt
+                        <p class="vellum-meta mt-2 tracking-normal normal-case">
+                            Public http(s) links. Each reference is billed as
+                            765 input image tokens.
+                        </p>
+                        <div class="mt-3 flex flex-col gap-2 sm:flex-row">
+                            <div class="relative min-w-0 flex-1">
+                                <Link2
+                                    class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-stone"
+                                    aria-hidden="true"
+                                />
+                                <label for="reference-url" class="sr-only">
+                                    Reference image URL
                                 </label>
-                                <span
-                                    id="prompt-count"
-                                    class="ledger text-[0.62rem]"
-                                    :class="
-                                        atCharacterLimit
-                                            ? 'text-signal'
-                                            : 'text-signal-faint'
-                                    "
-                                    aria-live="polite"
-                                >
-                                    {{ characterCount.toLocaleString() }} /
-                                    {{ maxPromptCharacters.toLocaleString() }}
-                                </span>
-                            </div>
-                            <textarea
-                                id="prompt"
-                                ref="promptField"
-                                v-model="form.prompt"
-                                rows="6"
-                                :maxlength="maxPromptCharacters"
-                                class="mt-2 block w-full resize-y border border-line bg-background px-4 py-3.5 font-display text-[1.05rem] leading-[1.5] tracking-[-0.01em] text-signal outline-none placeholder:text-signal-faint focus:border-signal"
-                                placeholder="A stone observatory above a sea of cloud at first light."
-                                :aria-describedby="
-                                    form.errors.prompt
-                                        ? 'prompt-help prompt-count prompt-error'
-                                        : 'prompt-help prompt-count'
-                                "
-                                :aria-invalid="
-                                    form.errors.prompt ? 'true' : undefined
-                                "
-                                required
-                            />
-                            <p
-                                id="prompt-help"
-                                class="mt-2 text-xs leading-relaxed text-signal-muted"
-                            >
-                                Be specific about light, material, and mood. Up
-                                to {{ maxPromptCharacters.toLocaleString() }}
-                                Unicode characters.
-                            </p>
-                            <p
-                                v-if="form.errors.prompt"
-                                id="prompt-error"
-                                class="mt-2 border-l border-signal pl-3 text-xs leading-relaxed text-signal"
-                                role="alert"
-                            >
-                                {{ form.errors.prompt }}
-                            </p>
-                        </div>
-
-                        <div>
-                            <p class="eyebrow">Or begin with a study</p>
-                            <div class="mt-2 flex flex-wrap gap-2">
-                                <button
-                                    v-for="suggestion in suggestions"
-                                    :key="suggestion"
-                                    type="button"
-                                    class="focus-ring border border-line-soft px-2.5 py-1.5 text-left font-mono text-[0.6rem] leading-snug text-signal-muted transition-opacity hover:border-signal-line hover:text-signal hover:opacity-80 motion-reduce:transition-none"
-                                    @click="useSuggestion(suggestion)"
-                                >
-                                    {{ suggestion.split(',')[0] }}
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="border-t border-line-soft pt-4">
-                            <div
-                                class="flex items-baseline justify-between gap-3"
-                            >
-                                <p class="eyebrow">Reference URLs</p>
-                                <span
-                                    class="ledger text-[0.6rem] text-signal-faint"
-                                >
-                                    {{ form.reference_images.length }} /
-                                    {{ maxReferenceImages }}
-                                </span>
-                            </div>
-                            <p
-                                class="mt-2 text-xs leading-relaxed text-signal-muted"
-                            >
-                                Public http(s) links. Each reference is billed
-                                as 765 input image tokens.
-                            </p>
-
-                            <div class="mt-3 flex flex-col gap-2 sm:flex-row">
-                                <div class="relative min-w-0 flex-1">
-                                    <Link2
-                                        class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-signal-faint"
-                                        aria-hidden="true"
-                                    />
-                                    <label for="reference-url" class="sr-only">
-                                        Reference image URL
-                                    </label>
-                                    <input
-                                        id="reference-url"
-                                        ref="referenceInput"
-                                        type="url"
-                                        inputmode="url"
-                                        placeholder="https://example.com/reference.jpg"
-                                        class="h-10 w-full border border-line bg-background pr-3 pl-9 font-mono text-[0.7rem] text-signal outline-none placeholder:text-signal-faint focus:border-signal"
-                                        :disabled="
-                                            form.reference_images.length >=
-                                            maxReferenceImages
-                                        "
-                                        @keydown.enter.prevent="addReference"
-                                    />
-                                </div>
-                                <button
-                                    type="button"
-                                    class="focus-ring inline-flex h-10 shrink-0 items-center justify-center gap-2 border border-signal px-4 font-mono text-[0.62rem] tracking-[0.12em] text-signal uppercase transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none"
+                                <input
+                                    id="reference-url"
+                                    ref="referenceInput"
+                                    type="url"
+                                    inputmode="url"
+                                    placeholder="https://example.com/reference.jpg"
+                                    class="vellum-input h-10 pr-3 pl-9 font-mono text-xs"
                                     :disabled="
                                         form.reference_images.length >=
                                         maxReferenceImages
                                     "
-                                    @click="addReference"
-                                >
-                                    <Plus class="size-3.5" aria-hidden="true" />
-                                    Add
-                                </button>
+                                    @keydown.enter.prevent="addReference"
+                                />
                             </div>
-
-                            <p
-                                v-if="referenceError"
-                                class="mt-2 border-l border-signal pl-3 text-xs leading-relaxed text-signal"
-                                role="alert"
-                            >
-                                {{ referenceError }}
-                            </p>
-                            <div
-                                v-for="error in referenceErrors"
-                                :key="error.key"
-                                class="mt-2 border-l border-signal pl-3 text-xs leading-relaxed text-signal"
-                                role="alert"
-                            >
-                                {{ error.message }}
-                            </div>
-
-                            <ul
-                                v-if="form.reference_images.length > 0"
-                                class="mt-3 space-y-2"
-                            >
-                                <li
-                                    v-for="(
-                                        reference, index
-                                    ) in form.reference_images"
-                                    :key="index"
-                                    class="flex items-center gap-2 border border-line-soft bg-background px-2 py-2"
-                                >
-                                    <span
-                                        class="shrink-0 font-mono text-[0.58rem] tracking-[0.1em] text-signal-faint"
-                                    >
-                                        R{{
-                                            String(index + 1).padStart(2, '0')
-                                        }}
-                                    </span>
-                                    <label
-                                        :for="`reference-${index}`"
-                                        class="sr-only"
-                                    >
-                                        Reference URL {{ index + 1 }}
-                                    </label>
-                                    <input
-                                        :id="`reference-${index}`"
-                                        v-model="form.reference_images[index]"
-                                        type="url"
-                                        inputmode="url"
-                                        spellcheck="false"
-                                        class="min-w-0 flex-1 bg-transparent font-mono text-[0.65rem] text-signal-muted outline-none focus:text-signal"
-                                        @blur="validateReference(index)"
-                                    />
-                                    <a
-                                        :href="reference"
-                                        target="_blank"
-                                        rel="noreferrer noopener"
-                                        class="focus-ring shrink-0 text-signal-faint hover:text-signal"
-                                        :aria-label="`Open reference ${index + 1}`"
-                                    >
-                                        <ExternalLink
-                                            class="size-3.5"
-                                            aria-hidden="true"
-                                        />
-                                    </a>
-                                    <button
-                                        type="button"
-                                        class="focus-ring shrink-0 text-signal-faint hover:text-signal"
-                                        :aria-label="`Remove reference ${index + 1}`"
-                                        @click="removeReference(index)"
-                                    >
-                                        <X
-                                            class="size-3.5"
-                                            aria-hidden="true"
-                                        />
-                                    </button>
-                                </li>
-                            </ul>
-                        </div>
-
-                        <div class="border-t border-line-soft pt-4">
                             <button
                                 type="button"
-                                class="focus-ring flex w-full items-center justify-between gap-4 py-1 text-left"
-                                :aria-expanded="advancedOpen"
-                                aria-controls="advanced-settings"
-                                @click="advancedOpen = !advancedOpen"
+                                class="vellum-button vellum-button-quiet focus-ring h-10 shrink-0 px-4 text-xs"
+                                :disabled="
+                                    form.reference_images.length >=
+                                    maxReferenceImages
+                                "
+                                @click="addReference"
                             >
-                                <span class="min-w-0">
-                                    <span class="eyebrow">02 / Settings</span>
-                                    <span
-                                        class="mt-1 block truncate text-sm text-signal"
-                                    >
-                                        {{ currentSizeLabel }} ·
-                                        {{ qualityLabel(form.quality) }}
-                                    </span>
-                                </span>
-                                <ChevronDown
-                                    class="size-4 shrink-0 text-signal-muted transition-transform duration-200 motion-reduce:transition-none"
-                                    :class="advancedOpen ? 'rotate-180' : ''"
-                                    aria-hidden="true"
-                                />
+                                <Plus class="size-3.5" aria-hidden="true" />
+                                Add
                             </button>
-
-                            <div
-                                v-show="advancedOpen"
-                                id="advanced-settings"
-                                class="mt-4 space-y-5"
-                            >
-                                <fieldset>
-                                    <legend class="eyebrow">Proportion</legend>
-                                    <div class="mt-2 grid grid-cols-3 gap-2">
-                                        <label
-                                            v-for="option in sizeOptions"
-                                            :key="option.value"
-                                            class="cursor-pointer"
-                                        >
-                                            <input
-                                                v-model="form.size"
-                                                type="radio"
-                                                name="size"
-                                                :value="option.value"
-                                                class="peer sr-only"
-                                            />
-                                            <span
-                                                class="flex h-full flex-col gap-2 border border-line-soft px-2.5 py-2.5 transition-opacity peer-checked:border-signal peer-checked:bg-paper-deep peer-focus-visible:ring-2 peer-focus-visible:ring-signal peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-background motion-reduce:transition-none"
-                                            >
-                                                <span
-                                                    class="block w-6 border border-signal-line bg-background"
-                                                    :style="{
-                                                        aspectRatio:
-                                                            option.ratio,
-                                                    }"
-                                                    aria-hidden="true"
-                                                />
-                                                <span
-                                                    class="font-mono text-[0.62rem] text-signal"
-                                                >
-                                                    {{ option.label }}
-                                                </span>
-                                                <span
-                                                    class="font-mono text-[0.55rem] text-signal-faint"
-                                                >
-                                                    {{ option.value }}
-                                                </span>
-                                            </span>
-                                        </label>
-                                    </div>
-                                </fieldset>
-
-                                <fieldset>
-                                    <legend class="eyebrow">Quality</legend>
-                                    <div class="mt-2 space-y-2">
-                                        <label
-                                            v-for="option in qualityOptions"
-                                            :key="option.value"
-                                            class="block cursor-pointer"
-                                        >
-                                            <input
-                                                v-model="form.quality"
-                                                type="radio"
-                                                name="quality"
-                                                :value="option.value"
-                                                class="peer sr-only"
-                                            />
-                                            <span
-                                                class="flex items-start justify-between gap-3 border border-line-soft px-3 py-2.5 transition-opacity peer-checked:border-signal peer-checked:bg-paper-deep peer-focus-visible:ring-2 peer-focus-visible:ring-signal peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-background motion-reduce:transition-none"
-                                            >
-                                                <span class="min-w-0">
-                                                    <span
-                                                        class="block text-sm text-signal"
-                                                    >
-                                                        {{ option.label }}
-                                                    </span>
-                                                    <span
-                                                        class="mt-0.5 block text-[0.68rem] leading-snug text-signal-muted"
-                                                    >
-                                                        {{ option.note }}
-                                                    </span>
-                                                </span>
-                                                <span
-                                                    v-if="option.output"
-                                                    class="ledger shrink-0 text-[0.55rem] text-signal-faint"
-                                                >
-                                                    {{
-                                                        option.output.toLocaleString()
-                                                    }}
-                                                    out
-                                                </span>
-                                            </span>
-                                        </label>
-                                    </div>
-                                </fieldset>
-                            </div>
                         </div>
+
+                        <p
+                            v-if="referenceError"
+                            class="mt-2 border-l border-document pl-3 text-xs leading-relaxed text-document"
+                            role="alert"
+                        >
+                            {{ referenceError }}
+                        </p>
+                        <div
+                            v-for="error in referenceErrors"
+                            :key="error.key"
+                            class="mt-2 border-l border-document pl-3 text-xs leading-relaxed text-document"
+                            role="alert"
+                        >
+                            {{ error.message }}
+                        </div>
+
+                        <ul
+                            v-if="form.reference_images.length > 0"
+                            class="mt-3 space-y-2"
+                        >
+                            <li
+                                v-for="(
+                                    reference, index
+                                ) in form.reference_images"
+                                :key="index"
+                                class="flex items-center gap-2 border border-edge bg-elevated px-2 py-2"
+                            >
+                                <span class="vellum-meta shrink-0">
+                                    R{{ String(index + 1).padStart(2, '0') }}
+                                </span>
+                                <label
+                                    :for="`reference-${index}`"
+                                    class="sr-only"
+                                >
+                                    Reference URL {{ index + 1 }}
+                                </label>
+                                <input
+                                    :id="`reference-${index}`"
+                                    v-model="form.reference_images[index]"
+                                    type="url"
+                                    inputmode="url"
+                                    spellcheck="false"
+                                    class="min-w-0 flex-1 bg-transparent font-mono text-[0.65rem] text-ash outline-none focus:text-document"
+                                    @blur="validateReference(index)"
+                                />
+                                <a
+                                    :href="reference"
+                                    target="_blank"
+                                    rel="noreferrer noopener"
+                                    class="focus-ring shrink-0 text-stone hover:text-document"
+                                    :aria-label="`Open reference ${index + 1}`"
+                                >
+                                    <ExternalLink
+                                        class="size-3.5"
+                                        aria-hidden="true"
+                                    />
+                                </a>
+                                <button
+                                    type="button"
+                                    class="focus-ring shrink-0 text-stone hover:text-document"
+                                    :aria-label="`Remove reference ${index + 1}`"
+                                    @click="removeReference(index)"
+                                >
+                                    <X class="size-3.5" aria-hidden="true" />
+                                </button>
+                            </li>
+                        </ul>
                     </div>
 
-                    <div class="border-t border-line bg-background px-5 py-5">
-                        <div class="flex items-baseline justify-between gap-3">
-                            <p class="eyebrow">Estimate / live range</p>
-                            <span
-                                class="font-mono text-[0.55rem] tracking-[0.12em] text-signal-faint uppercase"
+                    <fieldset>
+                        <legend class="text-sm font-medium text-document">
+                            Proportion
+                        </legend>
+                        <div class="mt-3 grid grid-cols-3 gap-2">
+                            <label
+                                v-for="option in sizeOptions"
+                                :key="option.value"
+                                class="cursor-pointer"
                             >
-                                USD / tax excl.
-                            </span>
+                                <input
+                                    v-model="form.size"
+                                    type="radio"
+                                    name="size"
+                                    :value="option.value"
+                                    class="peer sr-only"
+                                />
+                                <span
+                                    class="flex h-full flex-col gap-2 border border-edge bg-elevated px-3 py-3 transition-colors peer-checked:border-document peer-checked:bg-void peer-focus-visible:ring-2 peer-focus-visible:ring-document peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-void motion-reduce:transition-none"
+                                >
+                                    <span
+                                        class="block w-6 border border-line bg-void"
+                                        :style="{
+                                            aspectRatio: option.ratio,
+                                        }"
+                                        aria-hidden="true"
+                                    />
+                                    <span class="text-xs text-document">
+                                        {{ option.label }}
+                                    </span>
+                                    <span class="vellum-meta">{{
+                                        option.value
+                                    }}</span>
+                                </span>
+                            </label>
                         </div>
+                    </fieldset>
 
-                        <div class="mt-3" aria-live="polite" aria-atomic="true">
+                    <fieldset>
+                        <legend class="text-sm font-medium text-document">
+                            Quality
+                        </legend>
+                        <div class="mt-3 grid gap-2 sm:grid-cols-3">
+                            <label
+                                v-for="option in qualityOptions"
+                                :key="option.value"
+                                class="cursor-pointer"
+                            >
+                                <input
+                                    v-model="form.quality"
+                                    type="radio"
+                                    name="quality"
+                                    :value="option.value"
+                                    class="peer sr-only"
+                                />
+                                <span
+                                    class="flex h-full flex-col justify-between gap-3 border border-edge bg-elevated px-3 py-3 transition-colors peer-checked:border-document peer-checked:bg-void peer-focus-visible:ring-2 peer-focus-visible:ring-document peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-void motion-reduce:transition-none"
+                                >
+                                    <span>
+                                        <span
+                                            class="block text-sm text-document"
+                                        >
+                                            {{ option.label }}
+                                        </span>
+                                        <span
+                                            class="mt-1 block text-xs leading-snug text-ash"
+                                        >
+                                            {{ option.note }}
+                                        </span>
+                                    </span>
+                                    <span
+                                        v-if="option.output"
+                                        class="ledger text-[0.6rem] text-stone"
+                                    >
+                                        {{ option.output.toLocaleString() }}
+                                        out
+                                    </span>
+                                </span>
+                            </label>
+                        </div>
+                    </fieldset>
+                </div>
+
+                <div class="border-t border-line bg-void px-4 py-4 sm:px-5">
+                    <div class="flex flex-wrap items-end justify-between gap-5">
+                        <div
+                            class="min-w-[15rem] flex-1"
+                            aria-live="polite"
+                            aria-atomic="true"
+                        >
+                            <p class="vellum-meta">Live estimate</p>
+
                             <div
                                 v-if="estimateLoading && !estimate"
-                                class="flex items-center gap-3 py-2"
+                                class="mt-2 flex items-center gap-3"
                                 role="status"
                             >
                                 <span
-                                    class="size-3 border border-signal-line"
+                                    class="size-3 border border-line"
                                     aria-hidden="true"
                                 />
-                                <span
-                                    class="font-mono text-[0.65rem] tracking-[0.14em] text-signal-muted uppercase"
-                                >
-                                    Refreshing estimate…
-                                </span>
+                                <span class="vellum-meta">Refreshing…</span>
                             </div>
 
                             <template v-else-if="estimate">
-                                <div
-                                    class="flex items-baseline justify-between gap-3"
-                                >
-                                    <p
-                                        class="font-display text-[2rem] leading-none tracking-[-0.04em] text-signal sm:text-[2.25rem]"
-                                    >
-                                        {{ estimate.customer_charge.min }}
-                                        <span class="text-signal-faint">—</span>
-                                        {{ estimate.customer_charge.max }}
-                                    </p>
-                                    <span
-                                        v-if="estimateLoading"
-                                        class="font-mono text-[0.55rem] tracking-[0.12em] text-signal-faint uppercase"
-                                    >
-                                        Updating
-                                    </span>
-                                </div>
                                 <p
-                                    class="mt-2 font-mono text-[0.58rem] leading-relaxed tracking-[0.1em] text-signal-muted uppercase"
+                                    class="vellum-title mt-2 text-2xl text-document sm:text-[1.75rem]"
+                                >
+                                    {{
+                                        exactMoney(
+                                            estimate.customer_charge_nanos.min,
+                                        )
+                                    }}
+                                    <span class="text-stone">—</span>
+                                    {{
+                                        exactMoney(
+                                            estimate.customer_charge_nanos.max,
+                                        )
+                                    }}
+                                </p>
+                                <p
+                                    class="vellum-meta mt-1.5 tracking-normal normal-case"
                                 >
                                     {{
                                         estimate.total_tokens.min.toLocaleString()
@@ -1136,83 +1079,16 @@ onBeforeUnmount(() => {
                                     tokens · {{ estimate.markup_percent }}%
                                     studio fee
                                 </p>
-
-                                <details
-                                    v-if="estimateReady"
-                                    class="mt-3 border-t border-line-soft pt-3"
-                                >
-                                    <summary
-                                        class="cursor-pointer list-none font-mono text-[0.58rem] tracking-[0.14em] text-signal-muted uppercase"
-                                    >
-                                        Token ledger
-                                    </summary>
-                                    <dl
-                                        class="mt-3 space-y-2 font-mono text-[0.6rem]"
-                                    >
-                                        <div
-                                            class="flex items-baseline justify-between gap-3"
-                                        >
-                                            <dt class="text-signal-faint">
-                                                Input text
-                                            </dt>
-                                            <dd class="ledger text-signal">
-                                                {{
-                                                    estimate.text_tokens.min.toLocaleString()
-                                                }}–{{
-                                                    estimate.text_tokens.max.toLocaleString()
-                                                }}
-                                            </dd>
-                                        </div>
-                                        <div
-                                            class="flex items-baseline justify-between gap-3"
-                                        >
-                                            <dt class="text-signal-faint">
-                                                Input images
-                                            </dt>
-                                            <dd class="ledger text-signal">
-                                                {{
-                                                    estimate.input_image_tokens.toLocaleString()
-                                                }}
-                                            </dd>
-                                        </div>
-                                        <div
-                                            class="flex items-baseline justify-between gap-3"
-                                        >
-                                            <dt class="text-signal-faint">
-                                                Output
-                                            </dt>
-                                            <dd class="ledger text-signal">
-                                                {{
-                                                    estimate.output_tokens.toLocaleString()
-                                                }}
-                                            </dd>
-                                        </div>
-                                        <div
-                                            class="flex items-baseline justify-between gap-3"
-                                        >
-                                            <dt class="text-signal-faint">
-                                                Reasoning
-                                            </dt>
-                                            <dd class="ledger text-signal">
-                                                {{
-                                                    estimate.reasoning_tokens.min.toLocaleString()
-                                                }}–{{
-                                                    estimate.reasoning_tokens.max.toLocaleString()
-                                                }}
-                                            </dd>
-                                        </div>
-                                    </dl>
-                                </details>
                             </template>
 
                             <div v-else>
                                 <p
-                                    class="font-display text-2xl leading-none text-signal-faint"
+                                    class="vellum-title mt-2 text-2xl text-stone"
                                 >
                                     —
                                 </p>
                                 <p
-                                    class="mt-2 text-xs leading-relaxed text-signal-muted"
+                                    class="vellum-meta mt-1.5 tracking-normal normal-case"
                                 >
                                     {{
                                         pricingError
@@ -1223,17 +1099,9 @@ onBeforeUnmount(() => {
                             </div>
                         </div>
 
-                        <p
-                            v-if="estimateError"
-                            class="mt-3 border-l border-signal pl-3 text-xs leading-relaxed text-signal-muted"
-                            role="alert"
-                        >
-                            {{ estimateError }}
-                        </p>
-
                         <button
                             type="submit"
-                            class="focus-ring mt-5 hidden w-full items-center justify-center gap-3 bg-signal px-5 py-3.5 font-mono text-[0.68rem] tracking-[0.16em] text-signal-invert uppercase transition-opacity hover:opacity-85 disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none lg:inline-flex"
+                            class="vellum-button focus-ring w-full px-5 py-3.5 text-sm sm:w-auto"
                             :disabled="!canSubmit"
                         >
                             <template v-if="form.processing">Sending…</template>
@@ -1242,42 +1110,118 @@ onBeforeUnmount(() => {
                                 <ArrowRight class="size-4" aria-hidden="true" />
                             </template>
                         </button>
-
-                        <p
-                            class="mt-3 text-center font-mono text-[0.55rem] leading-relaxed tracking-[0.1em] text-signal-faint uppercase"
-                        >
-                            Estimate only. Final charge follows real token
-                            usage.
-                        </p>
                     </div>
-                </form>
 
-                <p
-                    v-if="!pricing"
-                    class="mt-4 border border-line bg-paper px-4 py-3 text-xs leading-relaxed text-signal-muted"
-                    role="status"
+                    <details
+                        v-if="estimateReady"
+                        class="mt-4 border-t border-line pt-3"
+                    >
+                        <summary class="vellum-meta cursor-pointer list-none">
+                            Token ledger
+                        </summary>
+                        <dl
+                            class="mt-3 grid gap-2 font-mono text-[0.62rem] sm:grid-cols-2"
+                        >
+                            <div
+                                class="flex items-baseline justify-between gap-3"
+                            >
+                                <dt class="text-stone">Input text</dt>
+                                <dd class="ledger text-document">
+                                    {{
+                                        estimate?.text_tokens.min.toLocaleString()
+                                    }}–
+                                    {{
+                                        estimate?.text_tokens.max.toLocaleString()
+                                    }}
+                                </dd>
+                            </div>
+                            <div
+                                class="flex items-baseline justify-between gap-3"
+                            >
+                                <dt class="text-stone">Input images</dt>
+                                <dd class="ledger text-document">
+                                    {{
+                                        estimate?.input_image_tokens.toLocaleString()
+                                    }}
+                                </dd>
+                            </div>
+                            <div
+                                class="flex items-baseline justify-between gap-3"
+                            >
+                                <dt class="text-stone">Output</dt>
+                                <dd class="ledger text-document">
+                                    {{
+                                        estimate?.output_tokens.toLocaleString()
+                                    }}
+                                </dd>
+                            </div>
+                            <div
+                                class="flex items-baseline justify-between gap-3"
+                            >
+                                <dt class="text-stone">Reasoning</dt>
+                                <dd class="ledger text-document">
+                                    {{
+                                        estimate?.reasoning_tokens.min.toLocaleString()
+                                    }}–
+                                    {{
+                                        estimate?.reasoning_tokens.max.toLocaleString()
+                                    }}
+                                </dd>
+                            </div>
+                        </dl>
+                    </details>
+
+                    <p
+                        v-if="estimateError"
+                        class="mt-3 border-l border-document pl-3 text-xs leading-relaxed text-ash"
+                        role="alert"
+                    >
+                        {{ estimateError }}
+                    </p>
+                    <p class="vellum-meta mt-3 tracking-normal normal-case">
+                        Estimate only. The final charge follows real token
+                        usage.
+                    </p>
+                    <p
+                        v-if="!pricing"
+                        class="mt-3 border border-line bg-elevated px-4 py-3 text-xs leading-relaxed text-ash"
+                        role="status"
+                    >
+                        Prompt composition stays open, but submission is paused
+                        until Pixelforge pricing is reachable.
+                    </p>
+                </div>
+            </form>
+
+            <details class="mt-6 border border-line bg-void">
+                <summary
+                    class="flex cursor-pointer list-none flex-wrap items-center justify-between gap-3 px-4 py-3"
                 >
-                    Prompt composition stays open, but submission is paused
-                    until Pixelforge pricing is reachable.
+                    <span class="text-sm font-medium text-document">
+                        Recent plates
+                    </span>
+                    <span class="vellum-meta">
+                        {{ recent.length }} archived · open to review
+                    </span>
+                </summary>
+                <div
+                    v-if="recent.length > 0"
+                    class="grid gap-4 border-t border-line p-4 sm:grid-cols-2 xl:grid-cols-3"
+                >
+                    <GenerationCard
+                        v-for="generation in recent"
+                        :key="generation.id"
+                        :generation="generation"
+                        compact
+                    />
+                </div>
+                <p
+                    v-else
+                    class="border-t border-line px-4 py-6 text-sm text-ash"
+                >
+                    Nothing is archived yet.
                 </p>
-            </section>
+            </details>
         </div>
-    </div>
-
-    <div
-        class="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-background px-5 py-3 lg:hidden"
-    >
-        <button
-            type="submit"
-            form="studio-form"
-            class="focus-ring inline-flex w-full items-center justify-center gap-3 bg-signal px-5 py-3.5 font-mono text-[0.68rem] tracking-[0.16em] text-signal-invert uppercase transition-opacity hover:opacity-85 disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none"
-            :disabled="!canSubmit"
-        >
-            <template v-if="form.processing">Sending…</template>
-            <template v-else>
-                Make this image
-                <ArrowRight class="size-4" aria-hidden="true" />
-            </template>
-        </button>
     </div>
 </template>
