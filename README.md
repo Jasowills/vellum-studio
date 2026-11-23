@@ -28,7 +28,7 @@ Vellum is a Laravel 13 + Vue 3 + Inertia + TypeScript + Tailwind 4 application t
 
 | Layer         | Choice                                                                    |
 | ------------- | ------------------------------------------------------------------------- |
-| Backend       | Laravel 13, PHP 8.3                                                       |
+| Backend       | Laravel 13, PHP 8.4                                                       |
 | Frontend      | Vue 3, Inertia 3, TypeScript, Vite Plus, Tailwind CSS 4                   |
 | Money         | `brick/math` decimal arithmetic, stored as integer nanodollars            |
 | Auth          | Laravel Fortify (email/password, passkeys, 2FA, verification)             |
@@ -42,7 +42,7 @@ Vellum is a Laravel 13 + Vue 3 + Inertia + TypeScript + Tailwind 4 application t
 
 ### Requirements
 
-- PHP 8.3+ with `bcmath`/`gmp` as needed by `brick/math`
+- PHP 8.4+ with `bcmath`/`gmp` as needed by `brick/math`
 - Composer 2
 - Node 20+ and npm
 - MySQL 8+ (or SQLite for a lightweight local run)
