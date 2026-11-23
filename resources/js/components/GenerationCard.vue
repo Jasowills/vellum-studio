@@ -95,8 +95,8 @@ watch(
     <Link
         :href="`/generations/${generation.id}`"
         class="group block focus-visible:outline-none"
-        :aria-label="`Open generation: ${generation.prompt}`"
     >
+        <span class="sr-only">Open generation: </span>
         <article
             class="overflow-hidden border border-line bg-paper transition-transform duration-200 group-focus-visible:ring-2 group-focus-visible:ring-signal group-focus-visible:ring-offset-2 group-focus-visible:ring-offset-background hover:-translate-y-0.5 motion-reduce:transition-none motion-reduce:hover:translate-y-0"
         >

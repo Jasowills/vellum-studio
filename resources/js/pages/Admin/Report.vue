@@ -862,7 +862,7 @@ function refresh(): void {
                             {{ marginPercent }} of provider cost
                         </p>
                         <p
-                            class="mt-1 font-mono text-[0.52rem] tracking-[0.08em] text-signal-invert/50 uppercase"
+                            class="mt-1 font-mono text-[0.52rem] tracking-[0.08em] text-signal-invert/70 uppercase"
                         >
                             margin ÷ provider cost
                         </p>

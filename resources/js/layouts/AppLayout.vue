@@ -121,11 +121,7 @@ const flash = computed(() => {
             <div
                 class="mx-auto flex h-16 max-w-[1440px] items-center justify-between gap-4 px-5 sm:px-8 lg:px-12"
             >
-                <Link
-                    href="/studio"
-                    class="focus-ring"
-                    aria-label="Vellum studio home"
-                >
+                <Link href="/studio" class="focus-ring">
                     <BrandMark />
                 </Link>
 

@@ -343,6 +343,8 @@ Final checks all passed:
 
 Browser QA was rerun at 1440, 1280, 768, and 390 px after the final edits. Screenshots were retained for each surface and breakpoint. The checks found no horizontal overflow, broken images, console errors, wrong-role 4xx responses, chromatic CSS, or unlabelled visible fields. First Tab focus on both landing and studio is the visible “Skip to content” link with a solid 2px outline. Pixel histograms of all captured screenshots were 100% grayscale.
 
+The in-app browser was then used for a final live inspection of the landing page, login, studio, library, generation detail, usage, admin report, and settings surfaces, plus the public Cloudflare build. Lighthouse scored accessibility, best practices, and SEO at 1.00 on those surfaces after fixing two real findings: low-contrast metadata on the landing page and admin report, and two accessible names that did not include their visible text. The signed-in prompt handoff was exercised both ways in the browser: unauthenticated submission survived login into a prefilled studio composer, and authenticated submission navigated directly to a prefilled composer with the short-lived storage key cleared.
+
 ### Git and deployment
 
 The redesign is committed as one focused frontend/documentation change on `main`, with no secrets, build output, local `.env`, or private generation images added. The public repository remains <https://github.com/Jasowills/vellum-studio>. The live demo is still the ephemeral Cloudflare quick tunnel noted above; durable hosting remains blocked by the same external credential/billing constraints, not by application code.

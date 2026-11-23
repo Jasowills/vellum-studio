@@ -312,9 +312,12 @@ function selectDay(day: UsageDay): void {
                         >
                     </div>
 
-                    <div v-if="hasWindowActivity" class="relative h-52 sm:h-64">
+                    <div
+                        v-if="hasWindowActivity"
+                        class="relative h-52 overflow-x-auto sm:h-64"
+                    >
                         <div
-                            class="pointer-events-none absolute inset-0"
+                            class="pointer-events-none absolute inset-0 min-w-[900px]"
                             aria-hidden="true"
                         >
                             <div
@@ -339,7 +342,7 @@ function selectDay(day: UsageDay): void {
                         </div>
 
                         <div
-                            class="absolute inset-y-0 right-9 left-3 flex items-end gap-px pt-3 sm:right-12 sm:left-4 sm:gap-[3px]"
+                            class="absolute inset-y-0 right-9 left-3 flex min-w-[900px] items-end gap-px pt-3 sm:right-12 sm:left-4 sm:gap-[3px]"
                             role="group"
                             aria-label="Daily generation bars. Each bar is focusable and announces all figures for its day."
                         >

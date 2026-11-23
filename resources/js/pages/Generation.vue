@@ -277,8 +277,8 @@ onBeforeUnmount(() => {
                         class="focus-ring inline-flex max-w-full items-center gap-2 border border-line px-2 py-1 font-mono text-[0.6rem] tracking-[0.08em] text-signal-muted transition-colors hover:border-signal hover:text-signal"
                         :aria-label="
                             idCopied
-                                ? 'Generation ID copied'
-                                : 'Copy generation ID'
+                                ? `Generation ID ${generation.id} copied`
+                                : `Copy generation ID ${generation.id}`
                         "
                         @click="copyId"
                     >
