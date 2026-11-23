@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
+import { Check } from '@lucide/vue';
 import TextLink from '@/components/TextLink.vue';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
@@ -24,23 +25,37 @@ defineProps<{
 
     <div
         v-if="status === 'verification-link-sent'"
-        class="mb-4 text-center text-sm font-medium text-green-600"
+        role="status"
+        class="mb-6 flex items-start gap-3 border border-line bg-paper px-4 py-3 text-left text-sm leading-relaxed text-signal"
     >
-        A new verification link has been sent to the email address you provided
-        during registration.
+        <Check class="mt-0.5 size-4 shrink-0 text-signal" aria-hidden="true" />
+        <span>
+            A new verification link has been sent to the email address you
+            provided during registration.
+        </span>
     </div>
 
     <Form
         v-bind="send.form()"
-        class="space-y-6 text-center"
+        class="grid gap-6 border-t border-line pt-6 text-center"
         v-slot="{ processing }"
     >
-        <Button :disabled="processing" variant="secondary">
+        <Button
+            type="submit"
+            variant="secondary"
+            :class="'h-11 w-full border border-line font-mono text-[0.72rem] tracking-[0.16em] text-signal uppercase hover:border-signal focus-visible:ring-signal disabled:opacity-60'"
+            :disabled="processing"
+            :aria-busy="processing"
+        >
             <Spinner v-if="processing" />
-            Resend verification email
+            {{ processing ? 'Sending...' : 'Resend verification email' }}
         </Button>
 
-        <TextLink :href="logout()" as="button" class="mx-auto block text-sm">
+        <TextLink
+            :href="logout()"
+            as="button"
+            class="mx-auto block font-mono text-[0.68rem] tracking-[0.16em] text-signal uppercase"
+        >
             Log out
         </TextLink>
     </Form>

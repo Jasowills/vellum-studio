@@ -1,17 +1,36 @@
 <script setup lang="ts">
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { ArrowRight, Link2, Plus, Sparkles, X } from '@lucide/vue';
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import {
+    ArrowRight,
+    ChevronDown,
+    ExternalLink,
+    Link2,
+    Plus,
+    X,
+} from '@lucide/vue';
+import {
+    computed,
+    nextTick,
+    onBeforeUnmount,
+    onMounted,
+    ref,
+    watch,
+} from 'vue';
 import GenerationCard from '@/components/GenerationCard.vue';
+import StatusBadge from '@/components/StatusBadge.vue';
+import { consumePromptForStudio } from '@/lib/pendingPrompt';
 import {
     csrfToken,
+    formatRelative,
+    generationAlt,
     qualityDescription,
     qualityLabel,
     randomUuid,
+    ratioLabel,
 } from '@/lib/vellum';
 import type { EstimatePayload, Generation, PricingPayload } from '@/types';
 
-const props = defineProps<{
+interface Props {
     pricing: PricingPayload | null;
     pricingError: string | null;
     sizes: string[];
@@ -28,21 +47,30 @@ const props = defineProps<{
         reference_images: string[];
         source_id: string;
     } | null;
-}>();
+}
 
-const form = useForm<{
+type StudioPrefill = NonNullable<Props['prefill']>;
+type FormFields = {
     prompt: string;
     size: string;
     quality: string;
     reference_images: string[];
     attempt_token: string;
-}>({
-    prompt: props.prefill?.prompt ?? '',
-    size: props.prefill?.size ?? props.defaultSize,
-    quality: props.prefill?.quality ?? props.defaultQuality,
-    reference_images: props.prefill?.reference_images ?? [],
-    attempt_token: randomUuid(),
-});
+};
+
+const props = defineProps<Props>();
+
+function initialValues(prefill: StudioPrefill | null): FormFields {
+    return {
+        prompt: prefill?.prompt ?? '',
+        size: prefill?.size ?? props.defaultSize,
+        quality: prefill?.quality ?? props.defaultQuality,
+        reference_images: [...(prefill?.reference_images ?? [])],
+        attempt_token: randomUuid(),
+    };
+}
+
+const form = useForm<FormFields>(initialValues(props.prefill));
 
 const promptField = ref<HTMLTextAreaElement | null>(null);
 const referenceInput = ref<HTMLInputElement | null>(null);
@@ -51,9 +79,18 @@ const estimate = ref<EstimatePayload | null>(null);
 const estimateLoading = ref(false);
 const estimateError = ref<string | null>(null);
 const attempted = ref(false);
+const advancedOpen = ref(false);
+const featuredImageFailed = ref(false);
 
 let estimateTimer: ReturnType<typeof setTimeout> | undefined;
 let estimateController: AbortController | null = null;
+let skipNextEstimateSchedule = false;
+
+const ACTIVE_STATUSES: Generation['status'][] = [
+    'pending',
+    'queued',
+    'processing',
+];
 
 const sizeOptions = computed(() =>
     props.sizes.map((value) => {
@@ -108,14 +145,112 @@ const canSubmit = computed(
         !form.processing &&
         form.reference_images.length <= props.maxReferenceImages,
 );
-
 const estimateReady = computed(
     () => estimate.value !== null && !estimateLoading.value,
 );
 
+const currentSizeLabel = computed(
+    () =>
+        sizeOptions.value.find((option) => option.value === form.size)?.label ??
+        form.size,
+);
+
+const referenceErrors = computed(() =>
+    Object.entries(form.errors)
+        .filter(([key]) => key.startsWith('reference_images.'))
+        .map(([key, message]) => ({ key, message })),
+);
+
+const featured = computed(() => props.recent[0] ?? null);
+const featuredActive = computed(() =>
+    featured.value ? ACTIVE_STATUSES.includes(featured.value.status) : false,
+);
+const featuredImageReady = computed(
+    () =>
+        Boolean(featured.value?.image.available && featured.value.image.url) &&
+        !featuredImageFailed.value,
+);
+const featuredAlt = computed(() =>
+    featured.value ? generationAlt(featured.value) : '',
+);
+const featuredMessage = computed(() => {
+    const generation = featured.value;
+
+    if (!generation) {
+        return 'The canvas is waiting.';
+    }
+
+    if (ACTIVE_STATUSES.includes(generation.status)) {
+        return generation.status === 'processing'
+            ? 'Developing'
+            : 'In the queue';
+    }
+
+    if (generation.status === 'failed') {
+        return 'No plate was produced';
+    }
+
+    if (generation.image.expired) {
+        return 'Provider link expired';
+    }
+
+    return 'Latest plate';
+});
+const featuredCopy = computed(() => {
+    const generation = featured.value;
+
+    if (!generation) {
+        return 'Your first image will appear here. Nothing is shown until the provider returns a result.';
+    }
+
+    if (ACTIVE_STATUSES.includes(generation.status)) {
+        return generation.status === 'processing'
+            ? 'Pixelforge is forming the image. The state changes only when the provider reports one — no progress is guessed.'
+            : 'The plate is accepted and waiting. The state changes only when the provider reports one — no progress is guessed.';
+    }
+
+    if (generation.status === 'failed') {
+        return (
+            generation.failure?.message ??
+            'This attempt did not produce an image. Nothing was charged for it.'
+        );
+    }
+
+    if (generation.image.expired) {
+        return 'The signed provider link has lapsed. The record and its settled charge remain in the library.';
+    }
+
+    return 'Shown in grayscale here. Open the plate for its full prompt, ledger, and timeline.';
+});
+const featuredMetrics = computed(() => {
+    const generation = featured.value;
+
+    if (!generation) {
+        return [];
+    }
+
+    return [
+        { label: 'State', value: generation.status_label },
+        {
+            label: 'Format',
+            value: `${ratioLabel(generation.size)} · ${qualityLabel(generation.quality)}`,
+        },
+        {
+            label: 'Charge',
+            value:
+                generation.cost.customer_charge ??
+                (generation.status === 'failed' ? 'No charge' : 'Pending'),
+        },
+        {
+            label: 'Created',
+            value: formatRelative(generation.created_at) || '—',
+        },
+    ];
+});
+
 const suggestions = [
-    'A pale observatory above a sea of cloud, morning light, fine grain.',
-    'A vermilion ceramic bowl of pale fruit on warm stone, painterly still life.',
+    'An observatory above a sea of cloud, morning light, fine grain.',
+    'A ceramic bowl of pale fruit on stone, painterly still life.',
     'A quiet reading room with one chair, long afternoon light, dust in the air.',
 ];
 
@@ -125,6 +260,8 @@ function scheduleEstimate(): void {
 }
 
 async function runEstimate(): Promise<void> {
+    window.clearTimeout(estimateTimer);
+
     if (props.pricing === null) {
         return;
     }
@@ -176,6 +313,29 @@ async function runEstimate(): Promise<void> {
     }
 }
 
+function initializeForm(prefill: StudioPrefill | null): void {
+    window.clearTimeout(estimateTimer);
+    estimateController?.abort();
+    estimateController = null;
+
+    const next = initialValues(prefill);
+
+    form.prompt = next.prompt;
+    form.size = next.size;
+    form.quality = next.quality;
+    form.reference_images = next.reference_images;
+    form.attempt_token = next.attempt_token;
+    attempted.value = false;
+    referenceError.value = null;
+    form.clearErrors();
+
+    estimate.value = null;
+    estimateError.value = null;
+    estimateLoading.value = false;
+
+    scheduleEstimate();
+}
+
 function useSuggestion(value: string): void {
     form.prompt = value;
     promptField.value?.focus();
@@ -221,8 +381,33 @@ function addReference(): void {
     }
 }
 
+function validateReference(index: number): void {
+    const value = form.reference_images[index]?.trim() ?? '';
+
+    form.reference_images[index] = value;
+
+    if (value === '') {
+        referenceError.value = `Reference ${index + 1} needs a public http or https URL.`;
+
+        return;
+    }
+
+    try {
+        const url = new URL(value);
+
+        if (!['http:', 'https:'].includes(url.protocol)) {
+            throw new Error('Unsupported protocol');
+        }
+
+        referenceError.value = null;
+    } catch {
+        referenceError.value = `Reference ${index + 1} needs a public http or https URL.`;
+    }
+}
+
 function removeReference(index: number): void {
     form.reference_images.splice(index, 1);
+    referenceError.value = null;
 }
 
 function rotateAttemptToken(): void {
@@ -250,15 +435,73 @@ function submit(): void {
 }
 
 watch(
-    () => [form.prompt, form.size, form.quality, form.reference_images.length],
+    () => [
+        form.prompt,
+        form.size,
+        form.quality,
+        JSON.stringify(form.reference_images),
+    ],
     () => {
         rotateAttemptToken();
+
+        if (skipNextEstimateSchedule) {
+            skipNextEstimateSchedule = false;
+
+            return;
+        }
+
         scheduleEstimate();
     },
 );
 
+watch(
+    () => props.prefill,
+    (next, previous) => {
+        if (next === previous) {
+            return;
+        }
+
+        initializeForm(next);
+
+        if (next) {
+            void nextTick(() => promptField.value?.focus());
+        }
+    },
+);
+
+watch(
+    () => featured.value?.image.url ?? null,
+    () => {
+        featuredImageFailed.value = false;
+    },
+);
+
 onMounted(() => {
+    let focusHandoff = false;
+
+    if (props.prefill === null) {
+        const handedOff = consumePromptForStudio();
+
+        if (handedOff !== null && handedOff !== '') {
+            if (handedOff !== form.prompt) {
+                skipNextEstimateSchedule = true;
+            }
+
+            form.prompt = handedOff;
+            form.attempt_token = randomUuid();
+            attempted.value = false;
+            focusHandoff = true;
+        }
+    }
+
     void runEstimate();
+
+    if (focusHandoff) {
+        void nextTick(() => {
+            skipNextEstimateSchedule = false;
+            promptField.value?.focus();
+        });
+    }
 });
 
 onBeforeUnmount(() => {
@@ -268,569 +511,773 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-    <Head title="The studio" />
+    <Head title="Studio" />
 
-    <div class="space-y-12">
+    <div class="space-y-8 bg-background pb-28 text-signal lg:pb-2">
         <header
-            class="flex flex-col justify-between gap-8 border-b border-line pb-8 lg:flex-row lg:items-end"
+            class="flex flex-col gap-5 border-b border-line pb-6 sm:flex-row sm:items-end sm:justify-between"
         >
             <div>
                 <p class="eyebrow flex items-center gap-3">
-                    <span class="h-px w-8 bg-vermilion" aria-hidden="true" />
-                    Studio / new plate
+                    <span class="h-px w-8 bg-signal" aria-hidden="true" />
+                    Studio / instrument 01
                 </p>
                 <h1
-                    class="display-title mt-5 max-w-[12ch] text-[clamp(2.9rem,5.6vw,4.8rem)] text-ink"
+                    class="display-title mt-4 max-w-[14ch] text-[clamp(2.4rem,4.6vw,3.75rem)] text-signal"
                 >
-                    The next
-                    <em class="text-vermilion">plate.</em>
+                    Make an image.
                 </h1>
             </div>
-            <div class="max-w-sm space-y-2 lg:text-right">
-                <p class="text-sm leading-relaxed text-ink-soft">
-                    Compose the image you want. Vellum sends it to Pixelforge,
-                    watches the webhooks, and records the exact cost when it is
-                    finished.
-                </p>
-                <p
-                    class="font-mono text-[0.6rem] tracking-[0.13em] text-ink-soft uppercase"
-                >
-                    Failed work is never charged
-                </p>
-            </div>
+            <p class="max-w-sm text-sm leading-relaxed text-signal-muted">
+                Compose a prompt. The estimate stays live; the charge is settled
+                only when the plate arrives.
+            </p>
         </header>
 
         <div
-            v-if="pricingError"
-            class="border border-ochre/35 bg-[#f4ead8] px-4 py-3 text-sm text-ochre"
-            role="alert"
+            class="grid min-w-0 items-start gap-8 lg:grid-cols-[minmax(0,1fr)_23rem] lg:gap-10 xl:grid-cols-[minmax(0,1fr)_25rem]"
         >
-            {{ pricingError }}
-        </div>
-
-        <div
-            v-if="prefill"
-            class="flex flex-wrap items-center justify-between gap-3 border border-line bg-paper px-4 py-3 text-xs text-ink-soft"
-        >
-            <span>
-                Setup copied from plate
-                <Link
-                    :href="`/generations/${prefill.source_id}`"
-                    class="font-mono text-ink underline decoration-line underline-offset-4 hover:text-vermilion"
-                    >{{ prefill.source_id }}</Link
-                >. This will be a new generation.
-            </span>
-            <span class="font-mono text-[0.58rem] tracking-[0.13em] uppercase"
-                >Fresh attempt</span
+            <section
+                class="order-2 min-w-0 lg:order-1"
+                aria-labelledby="canvas-heading"
             >
-        </div>
-
-        <div class="grid gap-10 lg:grid-cols-[minmax(0,1fr)_23rem] lg:gap-12">
-            <form
-                id="studio-form"
-                class="space-y-8"
-                novalidate
-                @submit.prevent="submit"
-            >
-                <section class="paper-panel p-5 sm:p-7">
-                    <div class="flex items-baseline justify-between gap-4">
-                        <div>
-                            <p class="eyebrow">01 / The prompt</p>
-                            <h2
-                                class="mt-2 font-display text-2xl tracking-[-0.02em] text-ink"
-                            >
-                                What should we make?
-                            </h2>
-                        </div>
-                        <span
-                            class="ledger text-[0.6rem] tracking-[0.08em]"
-                            :class="
-                                atCharacterLimit
-                                    ? 'text-vermilion'
-                                    : 'text-ink-soft'
-                            "
-                            >{{ characterCount.toLocaleString() }} /
-                            {{ maxPromptCharacters.toLocaleString() }}</span
+                <div
+                    class="flex flex-wrap items-end justify-between gap-3 border-b border-line pb-3"
+                >
+                    <div>
+                        <p class="eyebrow">Canvas / latest output</p>
+                        <h2
+                            id="canvas-heading"
+                            class="mt-2 font-display text-3xl tracking-[-0.03em] text-signal"
                         >
+                            Recent plate
+                        </h2>
                     </div>
-
-                    <label for="prompt" class="sr-only">Image prompt</label>
-                    <textarea
-                        id="prompt"
-                        ref="promptField"
-                        v-model="form.prompt"
-                        rows="7"
-                        :maxlength="maxPromptCharacters"
-                        class="mt-5 w-full resize-y border border-line bg-background/45 px-4 py-4 font-display text-[1.15rem] leading-[1.55] tracking-[-0.01em] text-ink placeholder:text-ink-soft/60 focus:border-ink focus:outline-none"
-                        placeholder="A quiet observatory above a sea of cloud, morning light, fine grain…"
-                        aria-describedby="prompt-help prompt-error"
-                        :aria-invalid="Boolean(form.errors.prompt)"
-                        required
-                    />
-                    <p id="prompt-help" class="mt-2 text-xs text-ink-soft">
-                        Be specific about light, material, and mood. Up to 4,000
-                        Unicode characters.
-                    </p>
-                    <p
-                        v-if="form.errors.prompt"
-                        id="prompt-error"
-                        class="mt-2 text-sm text-vermilion"
+                    <Link
+                        href="/library"
+                        class="link-underline font-mono text-[0.62rem] tracking-[0.14em] text-signal-muted uppercase"
                     >
-                        {{ form.errors.prompt }}
-                    </p>
+                        Full library
+                    </Link>
+                </div>
 
-                    <div class="mt-5 border-t border-line-soft pt-4">
-                        <p
-                            class="font-mono text-[0.58rem] tracking-[0.14em] text-ink-soft uppercase"
-                        >
-                            Or begin with a study
-                        </p>
-                        <div class="mt-3 flex flex-wrap gap-2">
-                            <button
-                                v-for="suggestion in suggestions"
-                                :key="suggestion"
-                                type="button"
-                                class="border border-line px-3 py-2 text-left text-[0.7rem] leading-snug text-ink-soft transition-colors hover:border-ink hover:text-ink"
-                                @click="useSuggestion(suggestion)"
-                            >
-                                {{ suggestion.split(',')[0] }}
-                            </button>
-                        </div>
-                    </div>
-                </section>
-
-                <section class="paper-panel p-5 sm:p-7">
-                    <div class="flex items-baseline justify-between gap-4">
-                        <div>
-                            <p class="eyebrow">02 / References</p>
-                            <h2
-                                class="mt-2 font-display text-2xl tracking-[-0.02em] text-ink"
-                            >
-                                Set the direction.
-                            </h2>
-                        </div>
-                        <span class="ledger text-[0.6rem] text-ink-soft"
-                            >{{ form.reference_images.length }} /
-                            {{ maxReferenceImages }}</span
-                        >
-                    </div>
-                    <p
-                        class="mt-2 max-w-xl text-xs leading-relaxed text-ink-soft"
+                <div
+                    v-if="featured"
+                    class="mt-5 border border-line bg-paper-deep"
+                >
+                    <div
+                        class="relative flex min-h-[20rem] items-center justify-center overflow-hidden bg-paper-deep sm:min-h-[26rem] lg:min-h-[32rem]"
                     >
-                        Optional public image URLs. Pixelforge does not download
-                        them, but bills each one at 765 input image tokens.
-                    </p>
-
-                    <div class="mt-4 flex flex-col gap-2 sm:flex-row">
-                        <div class="relative flex-1">
-                            <Link2
-                                class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-soft"
+                        <div
+                            class="signal-grid pointer-events-none absolute inset-0 opacity-40"
+                            aria-hidden="true"
+                        />
+                        <img
+                            v-if="featuredImageReady"
+                            :src="featured.image.url ?? undefined"
+                            :alt="featuredAlt"
+                            loading="lazy"
+                            decoding="async"
+                            class="relative z-10 max-h-[32rem] w-full object-contain grayscale"
+                            @error="featuredImageFailed = true"
+                        />
+                        <div
+                            v-else
+                            class="relative z-10 flex max-w-md flex-col items-center gap-4 px-6 py-12 text-center"
+                            aria-live="polite"
+                            aria-atomic="true"
+                        >
+                            <span
+                                class="font-display text-5xl leading-none text-signal-faint"
                                 aria-hidden="true"
+                            >
+                                {{ featuredActive ? '◌' : '×' }}
+                            </span>
+                            <p
+                                class="font-mono text-[0.65rem] tracking-[0.18em] text-signal-muted uppercase"
+                            >
+                                {{ featuredMessage }}
+                            </p>
+                            <p
+                                class="text-sm leading-relaxed text-signal-muted"
+                            >
+                                {{ featuredCopy }}
+                            </p>
+                        </div>
+
+                        <div class="absolute top-4 left-4 z-20">
+                            <StatusBadge
+                                :label="featured.status_label"
+                                :tone="featured.status_tone"
+                                :pulse="featuredActive"
                             />
-                            <label for="reference-url" class="sr-only"
-                                >Reference image URL</label
-                            >
-                            <input
-                                id="reference-url"
-                                ref="referenceInput"
-                                type="url"
-                                inputmode="url"
-                                placeholder="https://example.com/reference.jpg"
-                                class="h-10 w-full border border-line bg-background/45 pr-3 pl-9 text-sm text-ink placeholder:text-ink-soft/60 focus:border-ink focus:outline-none"
-                                :disabled="
-                                    form.reference_images.length >=
-                                    maxReferenceImages
-                                "
-                                @keydown.enter.prevent="addReference"
-                            />
                         </div>
-                        <button
-                            type="button"
-                            class="inline-flex h-10 items-center justify-center gap-2 border border-ink px-4 text-xs font-medium text-ink transition-colors hover:bg-ink hover:text-paper disabled:cursor-not-allowed disabled:opacity-40"
-                            :disabled="
-                                form.reference_images.length >=
-                                maxReferenceImages
-                            "
-                            @click="addReference"
-                        >
-                            <Plus class="size-3.5" aria-hidden="true" />
-                            Add reference
-                        </button>
-                    </div>
-                    <p
-                        v-if="referenceError"
-                        class="mt-2 text-xs text-vermilion"
-                    >
-                        {{ referenceError }}
-                    </p>
-                    <p
-                        v-if="form.errors['reference_images.0']"
-                        class="mt-2 text-xs text-vermilion"
-                    >
-                        {{ form.errors['reference_images.0'] }}
-                    </p>
-
-                    <ul
-                        v-if="form.reference_images.length > 0"
-                        class="mt-4 space-y-2"
-                    >
-                        <li
-                            v-for="(reference, index) in form.reference_images"
-                            :key="reference"
-                            class="flex items-center gap-3 border border-line-soft bg-background/35 px-3 py-2"
-                        >
-                            <span class="ledger text-[0.6rem] text-ink-soft">{{
-                                String(index + 1).padStart(2, '0')
-                            }}</span>
-                            <a
-                                :href="reference"
-                                target="_blank"
-                                rel="noreferrer noopener"
-                                class="min-w-0 flex-1 truncate font-mono text-[0.65rem] text-ink-soft hover:text-vermilion"
-                                >{{ reference }}</a
-                            >
-                            <button
-                                type="button"
-                                class="focus-ring text-ink-soft hover:text-vermilion"
-                                :aria-label="`Remove reference ${index + 1}`"
-                                @click="removeReference(index)"
-                            >
-                                <X class="size-3.5" aria-hidden="true" />
-                            </button>
-                        </li>
-                    </ul>
-                </section>
-
-                <div class="grid gap-8 sm:grid-cols-2">
-                    <fieldset class="paper-panel p-5 sm:p-6">
-                        <legend class="eyebrow">03 / Proportion</legend>
-                        <div class="mt-4 space-y-2">
-                            <label
-                                v-for="option in sizeOptions"
-                                :key="option.value"
-                                class="block cursor-pointer"
-                            >
-                                <input
-                                    v-model="form.size"
-                                    type="radio"
-                                    name="size"
-                                    :value="option.value"
-                                    class="peer sr-only"
-                                />
-                                <span
-                                    class="flex items-center gap-3 border border-line-soft px-3 py-3 transition-colors peer-checked:border-ink peer-checked:bg-background/45 peer-focus-visible:ring-2 peer-focus-visible:ring-vermilion peer-focus-visible:ring-offset-2"
-                                >
-                                    <span
-                                        class="block h-7 shrink-0 border border-ink/50 bg-paper"
-                                        :style="{ aspectRatio: option.ratio }"
-                                        aria-hidden="true"
-                                    />
-                                    <span class="min-w-0 flex-1">
-                                        <span
-                                            class="block text-sm font-medium text-ink"
-                                            >{{ option.label }}</span
-                                        >
-                                        <span
-                                            class="block text-[0.68rem] text-ink-soft"
-                                            >{{ option.note }}</span
-                                        >
-                                    </span>
-                                    <span
-                                        class="font-mono text-[0.55rem] text-ink-soft"
-                                        >{{ option.value }}</span
-                                    >
-                                </span>
-                            </label>
-                        </div>
-                    </fieldset>
-
-                    <fieldset class="paper-panel p-5 sm:p-6">
-                        <legend class="eyebrow">04 / Quality</legend>
-                        <div class="mt-4 space-y-2">
-                            <label
-                                v-for="option in qualityOptions"
-                                :key="option.value"
-                                class="block cursor-pointer"
-                            >
-                                <input
-                                    v-model="form.quality"
-                                    type="radio"
-                                    name="quality"
-                                    :value="option.value"
-                                    class="peer sr-only"
-                                />
-                                <span
-                                    class="block border border-line-soft px-3 py-3 transition-colors peer-checked:border-ink peer-checked:bg-background/45 peer-focus-visible:ring-2 peer-focus-visible:ring-vermilion peer-focus-visible:ring-offset-2"
-                                >
-                                    <span
-                                        class="flex items-baseline justify-between gap-3"
-                                    >
-                                        <span
-                                            class="text-sm font-medium text-ink"
-                                            >{{ option.label }}</span
-                                        >
-                                        <span
-                                            v-if="option.output"
-                                            class="ledger text-[0.55rem] text-ink-soft"
-                                            >{{
-                                                option.output.toLocaleString()
-                                            }}
-                                            out</span
-                                        >
-                                    </span>
-                                    <span
-                                        class="mt-1 block text-[0.68rem] leading-snug text-ink-soft"
-                                        >{{ option.note }}</span
-                                    >
-                                </span>
-                            </label>
-                        </div>
-                    </fieldset>
-                </div>
-
-                <div
-                    class="flex items-start gap-3 border border-line bg-paper px-4 py-3 text-xs leading-relaxed text-ink-soft"
-                >
-                    <Sparkles
-                        class="mt-0.5 size-3.5 shrink-0 text-vermilion"
-                        aria-hidden="true"
-                    />
-                    <p>
-                        A generation typically takes 5–30 seconds. You can leave
-                        this page; the studio will keep working, and the plate
-                        will wait in your library. Every attempt gets a stable
-                        idempotency key, so a retry can never create or charge
-                        twice.
-                    </p>
-                </div>
-
-                <button
-                    type="submit"
-                    class="focus-ring inline-flex w-full items-center justify-center gap-3 bg-ink px-6 py-4 text-sm font-medium text-paper transition-colors hover:bg-vermilion disabled:cursor-not-allowed disabled:opacity-45 lg:hidden"
-                    :disabled="!canSubmit"
-                >
-                    <span v-if="form.processing">Sending to the studio…</span>
-                    <template v-else>
-                        Make this image
-                        <ArrowRight class="size-4" aria-hidden="true" />
-                    </template>
-                </button>
-            </form>
-
-            <aside class="space-y-5 lg:sticky lg:top-24 lg:self-start">
-                <div
-                    class="bg-ink p-5 text-paper shadow-[0_30px_70px_-45px_rgba(33,29,23,0.8)] sm:p-6"
-                >
-                    <div class="flex items-center justify-between">
-                        <p
-                            class="font-mono text-[0.58rem] tracking-[0.16em] text-paper/50 uppercase"
-                        >
-                            Estimated charge
-                        </p>
-                        <span
-                            class="font-mono text-[0.55rem] tracking-[0.12em] text-paper/40 uppercase"
-                            >USD / tax excl.</span
-                        >
                     </div>
 
                     <div
-                        v-if="estimateLoading && !estimate"
-                        class="mt-5 space-y-3"
+                        class="flex flex-wrap items-center justify-between gap-3 border-t border-line px-4 py-4"
                     >
-                        <div class="h-11 w-4/5 animate-pulse bg-paper/10" />
-                        <div class="h-3 w-3/5 animate-pulse bg-paper/10" />
-                    </div>
-                    <div v-else-if="estimate" class="mt-4">
                         <p
-                            class="font-display text-[2.15rem] leading-[1.05] tracking-[-0.045em] text-paper sm:text-[2.45rem]"
+                            class="line-clamp-2 max-w-[42rem] min-w-0 font-display text-lg leading-snug tracking-[-0.015em] text-signal"
                         >
-                            {{ estimate.customer_charge.min }}
-                            <span class="text-paper/35">—</span>
-                            {{ estimate.customer_charge.max }}
+                            {{ featured.prompt }}
                         </p>
-                        <p
-                            class="mt-2 font-mono text-[0.6rem] leading-relaxed tracking-[0.08em] text-paper/50 uppercase"
+                        <Link
+                            :href="`/generations/${featured.id}`"
+                            class="focus-ring inline-flex shrink-0 items-center gap-2 font-mono text-[0.62rem] tracking-[0.14em] text-signal uppercase"
                         >
-                            {{ estimate.total_tokens.min.toLocaleString() }}–{{
-                                estimate.total_tokens.max.toLocaleString()
-                            }}
-                            tokens · includes a {{ estimate.markup_percent }}%
-                            studio fee
-                        </p>
+                            Open plate
+                            <ArrowRight class="size-3.5" aria-hidden="true" />
+                        </Link>
                     </div>
-                    <div v-else class="mt-4">
-                        <p class="font-display text-[2rem] text-paper/40">—</p>
-                        <p class="mt-2 text-xs text-paper/50">
-                            {{
-                                pricingError
-                                    ? 'Pricing is paused.'
-                                    : 'Write a prompt to see a live range.'
-                            }}
-                        </p>
-                    </div>
-
-                    <p
-                        v-if="estimateError"
-                        class="mt-4 border-t border-paper/15 pt-3 text-xs leading-relaxed text-paper/60"
-                    >
-                        {{ estimateError }}
-                    </p>
 
                     <dl
-                        v-if="estimate"
-                        class="mt-5 space-y-2 border-t border-paper/15 pt-4 font-mono text-[0.62rem]"
+                        class="grid grid-cols-2 gap-px border-t border-line bg-line sm:grid-cols-4"
                     >
-                        <div class="flex justify-between gap-3">
-                            <dt class="text-paper/45">Input text</dt>
-                            <dd class="text-paper/80">
-                                {{
-                                    estimate.text_tokens.min.toLocaleString()
-                                }}–{{
-                                    estimate.text_tokens.max.toLocaleString()
-                                }}
-                            </dd>
-                        </div>
-                        <div class="flex justify-between gap-3">
-                            <dt class="text-paper/45">Input images</dt>
-                            <dd class="text-paper/80">
-                                {{
-                                    estimate.input_image_tokens.toLocaleString()
-                                }}
-                            </dd>
-                        </div>
-                        <div class="flex justify-between gap-3">
-                            <dt class="text-paper/45">Output</dt>
-                            <dd class="text-paper/80">
-                                {{ estimate.output_tokens.toLocaleString() }}
-                            </dd>
-                        </div>
-                        <div class="flex justify-between gap-3">
-                            <dt class="text-paper/45">Reasoning</dt>
-                            <dd class="text-paper/80">
-                                {{
-                                    estimate.reasoning_tokens.min.toLocaleString()
-                                }}–{{
-                                    estimate.reasoning_tokens.max.toLocaleString()
-                                }}
+                        <div
+                            v-for="metric in featuredMetrics"
+                            :key="metric.label"
+                            class="bg-paper px-4 py-3"
+                        >
+                            <dt class="eyebrow">{{ metric.label }}</dt>
+                            <dd
+                                class="mt-1 truncate font-mono text-[0.7rem] tracking-[0.06em] text-signal"
+                            >
+                                {{ metric.value }}
                             </dd>
                         </div>
                     </dl>
-
-                    <button
-                        type="submit"
-                        form="studio-form"
-                        class="focus-ring mt-6 hidden w-full items-center justify-center gap-3 bg-vermilion px-5 py-3.5 text-sm font-medium text-paper transition-colors hover:bg-paper hover:text-ink disabled:cursor-not-allowed disabled:opacity-40 lg:inline-flex"
-                        :disabled="!canSubmit"
-                    >
-                        <span v-if="form.processing"
-                            >Sending to the studio…</span
-                        >
-                        <template v-else>
-                            Make this image
-                            <ArrowRight class="size-4" aria-hidden="true" />
-                        </template>
-                    </button>
-
-                    <p
-                        class="mt-3 text-center font-mono text-[0.55rem] leading-relaxed tracking-[0.08em] text-paper/40 uppercase"
-                    >
-                        Final charge follows real token usage. Failed
-                        generations are free.
-                    </p>
                 </div>
 
-                <div class="border border-line bg-paper p-5">
-                    <p class="eyebrow">After the prompt</p>
-                    <ol class="mt-4 space-y-3">
-                        <li
-                            class="flex gap-3 text-xs leading-relaxed text-ink-soft"
+                <div
+                    v-else
+                    class="relative mt-5 flex min-h-[20rem] flex-col items-center justify-center overflow-hidden border border-dashed border-line bg-paper px-6 py-12 text-center sm:min-h-[26rem] lg:min-h-[32rem]"
+                >
+                    <div
+                        class="signal-grid pointer-events-none absolute inset-0 opacity-40"
+                        aria-hidden="true"
+                    />
+                    <div class="relative z-10 max-w-md">
+                        <p
+                            class="font-display text-4xl tracking-[-0.03em] text-signal"
                         >
-                            <span class="ledger text-[0.6rem] text-vermilion"
-                                >01</span
-                            >
-                            <span
-                                >Pixelforge accepts the generation and queues
-                                it.</span
-                            >
-                        </li>
-                        <li
-                            class="flex gap-3 text-xs leading-relaxed text-ink-soft"
+                            The canvas is empty.
+                        </p>
+                        <p
+                            class="mt-3 text-sm leading-relaxed text-signal-muted"
                         >
-                            <span class="ledger text-[0.6rem] text-vermilion"
-                                >02</span
-                            >
-                            <span
-                                >Signed webhooks move it through the studio;
-                                polling is the safety net.</span
-                            >
-                        </li>
-                        <li
-                            class="flex gap-3 text-xs leading-relaxed text-ink-soft"
-                        >
-                            <span class="ledger text-[0.6rem] text-vermilion"
-                                >03</span
-                            >
-                            <span
-                                >The exact usage is priced, charged once, and
-                                archived here.</span
-                            >
-                        </li>
-                    </ol>
+                            Your first image will appear here. Nothing is shown
+                            until the provider returns a result.
+                        </p>
+                    </div>
                 </div>
+
+                <div v-if="recent.length > 0" class="mt-10">
+                    <div
+                        class="flex items-baseline justify-between border-b border-line pb-3"
+                    >
+                        <p class="eyebrow">Archive / most recent</p>
+                        <span
+                            class="font-mono text-[0.6rem] tracking-[0.14em] text-signal-faint uppercase"
+                        >
+                            {{ recent.length }} plates
+                        </span>
+                    </div>
+                    <div class="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                        <GenerationCard
+                            v-for="generation in recent"
+                            :key="generation.id"
+                            :generation="generation"
+                            compact
+                        />
+                    </div>
+                </div>
+            </section>
+
+            <section
+                class="order-1 min-w-0 lg:sticky lg:top-20 lg:order-2 lg:max-h-[calc(100vh-6rem)] lg:self-start lg:overflow-y-auto"
+                aria-labelledby="composer-heading"
+            >
+                <form
+                    id="studio-form"
+                    class="border border-line bg-paper"
+                    novalidate
+                    @submit.prevent="submit"
+                >
+                    <div
+                        class="flex items-start justify-between gap-4 border-b border-line px-5 py-4"
+                    >
+                        <div>
+                            <p class="eyebrow">Composer / new plate</p>
+                            <h2
+                                id="composer-heading"
+                                class="mt-1 font-display text-2xl tracking-[-0.02em] text-signal"
+                            >
+                                Describe the image.
+                            </h2>
+                        </div>
+                        <span
+                            class="shrink-0 font-mono text-[0.58rem] tracking-[0.14em] text-signal-faint uppercase"
+                        >
+                            01 / Prompt
+                        </span>
+                    </div>
+
+                    <div class="space-y-5 px-5 py-5">
+                        <div
+                            v-if="pricingError"
+                            class="border border-signal-line bg-paper-deep px-3 py-2.5 text-xs leading-relaxed text-signal"
+                            role="alert"
+                        >
+                            {{ pricingError }}
+                        </div>
+
+                        <div
+                            v-if="prefill"
+                            class="flex items-start justify-between gap-3 border border-line-soft bg-paper-deep px-3 py-2.5"
+                            role="status"
+                        >
+                            <p
+                                class="text-xs leading-relaxed text-signal-muted"
+                            >
+                                Setup copied from plate
+                                <Link
+                                    :href="`/generations/${prefill.source_id}`"
+                                    class="link-underline font-mono text-signal"
+                                >
+                                    {{ prefill.source_id }}
+                                </Link>
+                                . This will be a new generation.
+                            </p>
+                            <span
+                                class="shrink-0 font-mono text-[0.55rem] tracking-[0.12em] text-signal-faint uppercase"
+                            >
+                                Fresh key
+                            </span>
+                        </div>
+
+                        <div>
+                            <div
+                                class="flex items-baseline justify-between gap-3"
+                            >
+                                <label
+                                    for="prompt"
+                                    class="font-mono text-[0.62rem] tracking-[0.18em] text-signal-muted uppercase"
+                                >
+                                    Image prompt
+                                </label>
+                                <span
+                                    id="prompt-count"
+                                    class="ledger text-[0.62rem]"
+                                    :class="
+                                        atCharacterLimit
+                                            ? 'text-signal'
+                                            : 'text-signal-faint'
+                                    "
+                                    aria-live="polite"
+                                >
+                                    {{ characterCount.toLocaleString() }} /
+                                    {{ maxPromptCharacters.toLocaleString() }}
+                                </span>
+                            </div>
+                            <textarea
+                                id="prompt"
+                                ref="promptField"
+                                v-model="form.prompt"
+                                rows="6"
+                                :maxlength="maxPromptCharacters"
+                                class="mt-2 block w-full resize-y border border-line bg-background px-4 py-3.5 font-display text-[1.05rem] leading-[1.5] tracking-[-0.01em] text-signal outline-none placeholder:text-signal-faint focus:border-signal"
+                                placeholder="A stone observatory above a sea of cloud at first light."
+                                :aria-describedby="
+                                    form.errors.prompt
+                                        ? 'prompt-help prompt-count prompt-error'
+                                        : 'prompt-help prompt-count'
+                                "
+                                :aria-invalid="
+                                    form.errors.prompt ? 'true' : undefined
+                                "
+                                required
+                            />
+                            <p
+                                id="prompt-help"
+                                class="mt-2 text-xs leading-relaxed text-signal-muted"
+                            >
+                                Be specific about light, material, and mood. Up
+                                to {{ maxPromptCharacters.toLocaleString() }}
+                                Unicode characters.
+                            </p>
+                            <p
+                                v-if="form.errors.prompt"
+                                id="prompt-error"
+                                class="mt-2 border-l border-signal pl-3 text-xs leading-relaxed text-signal"
+                                role="alert"
+                            >
+                                {{ form.errors.prompt }}
+                            </p>
+                        </div>
+
+                        <div>
+                            <p class="eyebrow">Or begin with a study</p>
+                            <div class="mt-2 flex flex-wrap gap-2">
+                                <button
+                                    v-for="suggestion in suggestions"
+                                    :key="suggestion"
+                                    type="button"
+                                    class="focus-ring border border-line-soft px-2.5 py-1.5 text-left font-mono text-[0.6rem] leading-snug text-signal-muted transition-opacity hover:border-signal-line hover:text-signal hover:opacity-80 motion-reduce:transition-none"
+                                    @click="useSuggestion(suggestion)"
+                                >
+                                    {{ suggestion.split(',')[0] }}
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="border-t border-line-soft pt-4">
+                            <div
+                                class="flex items-baseline justify-between gap-3"
+                            >
+                                <p class="eyebrow">Reference URLs</p>
+                                <span
+                                    class="ledger text-[0.6rem] text-signal-faint"
+                                >
+                                    {{ form.reference_images.length }} /
+                                    {{ maxReferenceImages }}
+                                </span>
+                            </div>
+                            <p
+                                class="mt-2 text-xs leading-relaxed text-signal-muted"
+                            >
+                                Public http(s) links. Each reference is billed
+                                as 765 input image tokens.
+                            </p>
+
+                            <div class="mt-3 flex flex-col gap-2 sm:flex-row">
+                                <div class="relative min-w-0 flex-1">
+                                    <Link2
+                                        class="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-signal-faint"
+                                        aria-hidden="true"
+                                    />
+                                    <label for="reference-url" class="sr-only">
+                                        Reference image URL
+                                    </label>
+                                    <input
+                                        id="reference-url"
+                                        ref="referenceInput"
+                                        type="url"
+                                        inputmode="url"
+                                        placeholder="https://example.com/reference.jpg"
+                                        class="h-10 w-full border border-line bg-background pr-3 pl-9 font-mono text-[0.7rem] text-signal outline-none placeholder:text-signal-faint focus:border-signal"
+                                        :disabled="
+                                            form.reference_images.length >=
+                                            maxReferenceImages
+                                        "
+                                        @keydown.enter.prevent="addReference"
+                                    />
+                                </div>
+                                <button
+                                    type="button"
+                                    class="focus-ring inline-flex h-10 shrink-0 items-center justify-center gap-2 border border-signal px-4 font-mono text-[0.62rem] tracking-[0.12em] text-signal uppercase transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none"
+                                    :disabled="
+                                        form.reference_images.length >=
+                                        maxReferenceImages
+                                    "
+                                    @click="addReference"
+                                >
+                                    <Plus class="size-3.5" aria-hidden="true" />
+                                    Add
+                                </button>
+                            </div>
+
+                            <p
+                                v-if="referenceError"
+                                class="mt-2 border-l border-signal pl-3 text-xs leading-relaxed text-signal"
+                                role="alert"
+                            >
+                                {{ referenceError }}
+                            </p>
+                            <div
+                                v-for="error in referenceErrors"
+                                :key="error.key"
+                                class="mt-2 border-l border-signal pl-3 text-xs leading-relaxed text-signal"
+                                role="alert"
+                            >
+                                {{ error.message }}
+                            </div>
+
+                            <ul
+                                v-if="form.reference_images.length > 0"
+                                class="mt-3 space-y-2"
+                            >
+                                <li
+                                    v-for="(
+                                        reference, index
+                                    ) in form.reference_images"
+                                    :key="index"
+                                    class="flex items-center gap-2 border border-line-soft bg-background px-2 py-2"
+                                >
+                                    <span
+                                        class="shrink-0 font-mono text-[0.58rem] tracking-[0.1em] text-signal-faint"
+                                    >
+                                        R{{
+                                            String(index + 1).padStart(2, '0')
+                                        }}
+                                    </span>
+                                    <label
+                                        :for="`reference-${index}`"
+                                        class="sr-only"
+                                    >
+                                        Reference URL {{ index + 1 }}
+                                    </label>
+                                    <input
+                                        :id="`reference-${index}`"
+                                        v-model="form.reference_images[index]"
+                                        type="url"
+                                        inputmode="url"
+                                        spellcheck="false"
+                                        class="min-w-0 flex-1 bg-transparent font-mono text-[0.65rem] text-signal-muted outline-none focus:text-signal"
+                                        @blur="validateReference(index)"
+                                    />
+                                    <a
+                                        :href="reference"
+                                        target="_blank"
+                                        rel="noreferrer noopener"
+                                        class="focus-ring shrink-0 text-signal-faint hover:text-signal"
+                                        :aria-label="`Open reference ${index + 1}`"
+                                    >
+                                        <ExternalLink
+                                            class="size-3.5"
+                                            aria-hidden="true"
+                                        />
+                                    </a>
+                                    <button
+                                        type="button"
+                                        class="focus-ring shrink-0 text-signal-faint hover:text-signal"
+                                        :aria-label="`Remove reference ${index + 1}`"
+                                        @click="removeReference(index)"
+                                    >
+                                        <X
+                                            class="size-3.5"
+                                            aria-hidden="true"
+                                        />
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div class="border-t border-line-soft pt-4">
+                            <button
+                                type="button"
+                                class="focus-ring flex w-full items-center justify-between gap-4 py-1 text-left"
+                                :aria-expanded="advancedOpen"
+                                aria-controls="advanced-settings"
+                                @click="advancedOpen = !advancedOpen"
+                            >
+                                <span class="min-w-0">
+                                    <span class="eyebrow">02 / Settings</span>
+                                    <span
+                                        class="mt-1 block truncate text-sm text-signal"
+                                    >
+                                        {{ currentSizeLabel }} ·
+                                        {{ qualityLabel(form.quality) }}
+                                    </span>
+                                </span>
+                                <ChevronDown
+                                    class="size-4 shrink-0 text-signal-muted transition-transform duration-200 motion-reduce:transition-none"
+                                    :class="advancedOpen ? 'rotate-180' : ''"
+                                    aria-hidden="true"
+                                />
+                            </button>
+
+                            <div
+                                v-show="advancedOpen"
+                                id="advanced-settings"
+                                class="mt-4 space-y-5"
+                            >
+                                <fieldset>
+                                    <legend class="eyebrow">Proportion</legend>
+                                    <div class="mt-2 grid grid-cols-3 gap-2">
+                                        <label
+                                            v-for="option in sizeOptions"
+                                            :key="option.value"
+                                            class="cursor-pointer"
+                                        >
+                                            <input
+                                                v-model="form.size"
+                                                type="radio"
+                                                name="size"
+                                                :value="option.value"
+                                                class="peer sr-only"
+                                            />
+                                            <span
+                                                class="flex h-full flex-col gap-2 border border-line-soft px-2.5 py-2.5 transition-opacity peer-checked:border-signal peer-checked:bg-paper-deep peer-focus-visible:ring-2 peer-focus-visible:ring-signal peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-background motion-reduce:transition-none"
+                                            >
+                                                <span
+                                                    class="block w-6 border border-signal-line bg-background"
+                                                    :style="{
+                                                        aspectRatio:
+                                                            option.ratio,
+                                                    }"
+                                                    aria-hidden="true"
+                                                />
+                                                <span
+                                                    class="font-mono text-[0.62rem] text-signal"
+                                                >
+                                                    {{ option.label }}
+                                                </span>
+                                                <span
+                                                    class="font-mono text-[0.55rem] text-signal-faint"
+                                                >
+                                                    {{ option.value }}
+                                                </span>
+                                            </span>
+                                        </label>
+                                    </div>
+                                </fieldset>
+
+                                <fieldset>
+                                    <legend class="eyebrow">Quality</legend>
+                                    <div class="mt-2 space-y-2">
+                                        <label
+                                            v-for="option in qualityOptions"
+                                            :key="option.value"
+                                            class="block cursor-pointer"
+                                        >
+                                            <input
+                                                v-model="form.quality"
+                                                type="radio"
+                                                name="quality"
+                                                :value="option.value"
+                                                class="peer sr-only"
+                                            />
+                                            <span
+                                                class="flex items-start justify-between gap-3 border border-line-soft px-3 py-2.5 transition-opacity peer-checked:border-signal peer-checked:bg-paper-deep peer-focus-visible:ring-2 peer-focus-visible:ring-signal peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-background motion-reduce:transition-none"
+                                            >
+                                                <span class="min-w-0">
+                                                    <span
+                                                        class="block text-sm text-signal"
+                                                    >
+                                                        {{ option.label }}
+                                                    </span>
+                                                    <span
+                                                        class="mt-0.5 block text-[0.68rem] leading-snug text-signal-muted"
+                                                    >
+                                                        {{ option.note }}
+                                                    </span>
+                                                </span>
+                                                <span
+                                                    v-if="option.output"
+                                                    class="ledger shrink-0 text-[0.55rem] text-signal-faint"
+                                                >
+                                                    {{
+                                                        option.output.toLocaleString()
+                                                    }}
+                                                    out
+                                                </span>
+                                            </span>
+                                        </label>
+                                    </div>
+                                </fieldset>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-line bg-background px-5 py-5">
+                        <div class="flex items-baseline justify-between gap-3">
+                            <p class="eyebrow">Estimate / live range</p>
+                            <span
+                                class="font-mono text-[0.55rem] tracking-[0.12em] text-signal-faint uppercase"
+                            >
+                                USD / tax excl.
+                            </span>
+                        </div>
+
+                        <div class="mt-3" aria-live="polite" aria-atomic="true">
+                            <div
+                                v-if="estimateLoading && !estimate"
+                                class="flex items-center gap-3 py-2"
+                                role="status"
+                            >
+                                <span
+                                    class="size-3 border border-signal-line"
+                                    aria-hidden="true"
+                                />
+                                <span
+                                    class="font-mono text-[0.65rem] tracking-[0.14em] text-signal-muted uppercase"
+                                >
+                                    Refreshing estimate…
+                                </span>
+                            </div>
+
+                            <template v-else-if="estimate">
+                                <div
+                                    class="flex items-baseline justify-between gap-3"
+                                >
+                                    <p
+                                        class="font-display text-[2rem] leading-none tracking-[-0.04em] text-signal sm:text-[2.25rem]"
+                                    >
+                                        {{ estimate.customer_charge.min }}
+                                        <span class="text-signal-faint">—</span>
+                                        {{ estimate.customer_charge.max }}
+                                    </p>
+                                    <span
+                                        v-if="estimateLoading"
+                                        class="font-mono text-[0.55rem] tracking-[0.12em] text-signal-faint uppercase"
+                                    >
+                                        Updating
+                                    </span>
+                                </div>
+                                <p
+                                    class="mt-2 font-mono text-[0.58rem] leading-relaxed tracking-[0.1em] text-signal-muted uppercase"
+                                >
+                                    {{
+                                        estimate.total_tokens.min.toLocaleString()
+                                    }}–{{
+                                        estimate.total_tokens.max.toLocaleString()
+                                    }}
+                                    tokens · {{ estimate.markup_percent }}%
+                                    studio fee
+                                </p>
+
+                                <details
+                                    v-if="estimateReady"
+                                    class="mt-3 border-t border-line-soft pt-3"
+                                >
+                                    <summary
+                                        class="cursor-pointer list-none font-mono text-[0.58rem] tracking-[0.14em] text-signal-muted uppercase"
+                                    >
+                                        Token ledger
+                                    </summary>
+                                    <dl
+                                        class="mt-3 space-y-2 font-mono text-[0.6rem]"
+                                    >
+                                        <div
+                                            class="flex items-baseline justify-between gap-3"
+                                        >
+                                            <dt class="text-signal-faint">
+                                                Input text
+                                            </dt>
+                                            <dd class="ledger text-signal">
+                                                {{
+                                                    estimate.text_tokens.min.toLocaleString()
+                                                }}–{{
+                                                    estimate.text_tokens.max.toLocaleString()
+                                                }}
+                                            </dd>
+                                        </div>
+                                        <div
+                                            class="flex items-baseline justify-between gap-3"
+                                        >
+                                            <dt class="text-signal-faint">
+                                                Input images
+                                            </dt>
+                                            <dd class="ledger text-signal">
+                                                {{
+                                                    estimate.input_image_tokens.toLocaleString()
+                                                }}
+                                            </dd>
+                                        </div>
+                                        <div
+                                            class="flex items-baseline justify-between gap-3"
+                                        >
+                                            <dt class="text-signal-faint">
+                                                Output
+                                            </dt>
+                                            <dd class="ledger text-signal">
+                                                {{
+                                                    estimate.output_tokens.toLocaleString()
+                                                }}
+                                            </dd>
+                                        </div>
+                                        <div
+                                            class="flex items-baseline justify-between gap-3"
+                                        >
+                                            <dt class="text-signal-faint">
+                                                Reasoning
+                                            </dt>
+                                            <dd class="ledger text-signal">
+                                                {{
+                                                    estimate.reasoning_tokens.min.toLocaleString()
+                                                }}–{{
+                                                    estimate.reasoning_tokens.max.toLocaleString()
+                                                }}
+                                            </dd>
+                                        </div>
+                                    </dl>
+                                </details>
+                            </template>
+
+                            <div v-else>
+                                <p
+                                    class="font-display text-2xl leading-none text-signal-faint"
+                                >
+                                    —
+                                </p>
+                                <p
+                                    class="mt-2 text-xs leading-relaxed text-signal-muted"
+                                >
+                                    {{
+                                        pricingError
+                                            ? 'Pricing is unavailable; estimates are paused.'
+                                            : 'Write a prompt to see a live range.'
+                                    }}
+                                </p>
+                            </div>
+                        </div>
+
+                        <p
+                            v-if="estimateError"
+                            class="mt-3 border-l border-signal pl-3 text-xs leading-relaxed text-signal-muted"
+                            role="alert"
+                        >
+                            {{ estimateError }}
+                        </p>
+
+                        <button
+                            type="submit"
+                            class="focus-ring mt-5 hidden w-full items-center justify-center gap-3 bg-signal px-5 py-3.5 font-mono text-[0.68rem] tracking-[0.16em] text-signal-invert uppercase transition-opacity hover:opacity-85 disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none lg:inline-flex"
+                            :disabled="!canSubmit"
+                        >
+                            <template v-if="form.processing">Sending…</template>
+                            <template v-else>
+                                Make this image
+                                <ArrowRight class="size-4" aria-hidden="true" />
+                            </template>
+                        </button>
+
+                        <p
+                            class="mt-3 text-center font-mono text-[0.55rem] leading-relaxed tracking-[0.1em] text-signal-faint uppercase"
+                        >
+                            Estimate only. Final charge follows real token
+                            usage.
+                        </p>
+                    </div>
+                </form>
 
                 <p
                     v-if="!pricing"
-                    class="border border-line bg-paper px-4 py-3 text-xs text-ink-soft"
+                    class="mt-4 border border-line bg-paper px-4 py-3 text-xs leading-relaxed text-signal-muted"
+                    role="status"
                 >
-                    Prompt composition stays open, but the studio cannot submit
+                    Prompt composition stays open, but submission is paused
                     until Pixelforge pricing is reachable.
                 </p>
-            </aside>
+            </section>
         </div>
+    </div>
 
-        <section aria-labelledby="recent-plates">
-            <div
-                class="flex flex-wrap items-end justify-between gap-4 border-b border-line pb-4"
-            >
-                <div>
-                    <p class="eyebrow">Recent work</p>
-                    <h2
-                        id="recent-plates"
-                        class="mt-2 font-display text-3xl tracking-[-0.03em] text-ink"
-                    >
-                        Plates from this desk
-                    </h2>
-                </div>
-                <Link
-                    href="/library"
-                    class="link-underline text-xs font-medium text-ink-soft"
-                    >View the full library</Link
-                >
-            </div>
-
-            <div
-                v-if="recent.length > 0"
-                class="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3"
-            >
-                <GenerationCard
-                    v-for="generation in recent"
-                    :key="generation.id"
-                    :generation="generation"
-                    compact
-                />
-            </div>
-            <div
-                v-else
-                class="mt-6 border border-dashed border-line bg-paper/60 px-6 py-10 text-center"
-            >
-                <p class="font-display text-2xl text-ink">
-                    The first plate is yours.
-                </p>
-                <p class="mt-2 text-sm text-ink-soft">
-                    Your finished images, estimates, and exact charges will
-                    appear here.
-                </p>
-            </div>
-        </section>
+    <div
+        class="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-background px-5 py-3 lg:hidden"
+    >
+        <button
+            type="submit"
+            form="studio-form"
+            class="focus-ring inline-flex w-full items-center justify-center gap-3 bg-signal px-5 py-3.5 font-mono text-[0.68rem] tracking-[0.16em] text-signal-invert uppercase transition-opacity hover:opacity-85 disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none"
+            :disabled="!canSubmit"
+        >
+            <template v-if="form.processing">Sending…</template>
+            <template v-else>
+                Make this image
+                <ArrowRight class="size-4" aria-hidden="true" />
+            </template>
+        </button>
     </div>
 </template>

@@ -12,16 +12,16 @@ export default defineConfig({
             input: ['resources/css/app.css', 'resources/js/app.ts'],
             refresh: true,
             fonts: [
-                bunny('Fraunces', {
-                    weights: [400, 500, 600, 700],
-                    styles: ['normal', 'italic'],
-                    variable: '--font-display',
-                }),
-                bunny('Instrument Sans', {
+                bunny('Geist', {
                     weights: [400, 500, 600, 700],
                     variable: '--font-sans',
                 }),
-                bunny('Spline Sans Mono', {
+                bunny('Instrument Serif', {
+                    weights: [400],
+                    styles: ['normal', 'italic'],
+                    variable: '--font-display',
+                }),
+                bunny('Geist Mono', {
                     weights: [400, 500],
                     variable: '--font-mono',
                 }),

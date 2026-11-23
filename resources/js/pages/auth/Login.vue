@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
+import { AlertCircle, Check } from '@lucide/vue';
 import InputError from '@/components/InputError.vue';
 import PasswordInput from '@/components/PasswordInput.vue';
 import TextLink from '@/components/TextLink.vue';
@@ -28,6 +29,14 @@ defineProps<{
     status?: string;
     canResetPassword: boolean;
 }>();
+
+const inputClass =
+    'h-11 rounded-none border-line bg-paper-deep text-signal placeholder:text-signal-muted dark:bg-paper-deep focus-visible:border-signal focus-visible:ring-signal/25';
+const labelClass =
+    'font-mono text-[0.68rem] font-normal tracking-[0.16em] text-signal uppercase';
+const submitClass =
+    'mt-1 h-11 w-full border border-signal bg-signal font-mono text-[0.72rem] tracking-[0.16em] text-signal-invert uppercase hover:bg-signal/85 focus-visible:ring-signal disabled:opacity-60';
+const errorClass = '[&_p]:text-signal!';
 </script>
 
 <template>
@@ -35,9 +44,11 @@ defineProps<{
 
     <div
         v-if="status"
-        class="mb-4 text-center text-sm font-medium text-green-600"
+        role="status"
+        class="mb-6 flex items-start gap-3 border border-line bg-paper px-4 py-3 text-sm leading-relaxed text-signal"
     >
-        {{ status }}
+        <Check class="mt-0.5 size-4 shrink-0 text-signal" aria-hidden="true" />
+        <span>{{ status }}</span>
     </div>
 
     <!-- @chisel-passkeys -->
@@ -50,9 +61,9 @@ defineProps<{
         v-slot="{ errors, processing }"
         class="flex flex-col gap-6"
     >
-        <div class="grid gap-6">
+        <div class="grid gap-5">
             <div class="grid gap-2">
-                <Label for="email">Email address</Label>
+                <Label for="email" :class="labelClass">Email address</Label>
                 <Input
                     id="email"
                     type="email"
@@ -62,17 +73,32 @@ defineProps<{
                     :tabindex="1"
                     autocomplete="email"
                     placeholder="email@example.com"
+                    :class="inputClass"
+                    :aria-invalid="Boolean(errors.email)"
+                    aria-describedby="email-error"
                 />
-                <InputError :message="errors.email" />
+                <div
+                    id="email-error"
+                    :class="errorClass"
+                    class="flex min-h-5 items-start gap-2"
+                    aria-live="polite"
+                >
+                    <AlertCircle
+                        v-if="errors.email"
+                        class="mt-0.5 size-3.5 shrink-0 text-signal"
+                        aria-hidden="true"
+                    />
+                    <InputError :message="errors.email" />
+                </div>
             </div>
 
             <div class="grid gap-2">
-                <div class="flex items-center justify-between">
-                    <Label for="password">Password</Label>
+                <div class="flex items-center justify-between gap-4">
+                    <Label for="password" :class="labelClass">Password</Label>
                     <TextLink
                         v-if="canResetPassword"
                         :href="request()"
-                        class="text-sm"
+                        class="font-sans text-xs tracking-normal text-signal normal-case"
                         :tabindex="5"
                     >
                         Forgot your password?
@@ -85,33 +111,61 @@ defineProps<{
                     :tabindex="2"
                     autocomplete="current-password"
                     placeholder="Password"
+                    :class="inputClass"
+                    :aria-invalid="Boolean(errors.password)"
+                    aria-describedby="password-error"
                 />
-                <InputError :message="errors.password" />
+                <div
+                    id="password-error"
+                    :class="errorClass"
+                    class="flex min-h-5 items-start gap-2"
+                    aria-live="polite"
+                >
+                    <AlertCircle
+                        v-if="errors.password"
+                        class="mt-0.5 size-3.5 shrink-0 text-signal"
+                        aria-hidden="true"
+                    />
+                    <InputError :message="errors.password" />
+                </div>
             </div>
 
-            <div class="flex items-center justify-between">
-                <Label for="remember" class="flex items-center space-x-3">
-                    <Checkbox id="remember" name="remember" :tabindex="3" />
+            <div class="flex items-center">
+                <Label
+                    for="remember"
+                    class="flex cursor-pointer items-center gap-3 font-sans text-sm font-normal tracking-normal text-signal-muted normal-case"
+                >
+                    <Checkbox
+                        id="remember"
+                        name="remember"
+                        :tabindex="3"
+                        class="size-4 border-line bg-paper-deep data-[state=checked]:border-signal data-[state=checked]:bg-signal data-[state=checked]:text-signal-invert"
+                    />
                     <span>Remember me</span>
                 </Label>
             </div>
 
             <Button
                 type="submit"
-                class="mt-4 w-full"
+                :class="submitClass"
                 :tabindex="4"
                 :disabled="processing"
+                :aria-busy="processing"
                 data-test="login-button"
             >
                 <Spinner v-if="processing" />
-                Log in
+                {{ processing ? 'Logging in...' : 'Log in' }}
             </Button>
         </div>
 
         <!-- @chisel-registration -->
-        <div class="text-center text-sm text-muted-foreground">
+        <div
+            class="border-t border-line pt-5 text-center text-sm text-signal-muted"
+        >
             Don't have an account?
-            <TextLink :href="register()" :tabindex="5">Sign up</TextLink>
+            <TextLink :href="register()" :tabindex="5" class="text-signal">
+                Sign up
+            </TextLink>
         </div>
         <!-- @end-chisel-registration -->
     </Form>

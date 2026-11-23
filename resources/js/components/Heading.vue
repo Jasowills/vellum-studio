@@ -1,28 +1,27 @@
 <script setup lang="ts">
-type Props = {
-    title: string;
-    description?: string;
-    variant?: 'default' | 'small';
-};
-
-withDefaults(defineProps<Props>(), {
-    variant: 'default',
-});
+withDefaults(
+    defineProps<{
+        title?: string;
+        description?: string;
+    }>(),
+    {
+        title: '',
+        description: '',
+    },
+);
 </script>
 
 <template>
-    <header :class="variant === 'small' ? '' : 'mb-8 space-y-0.5'">
+    <div class="space-y-1.5">
         <h2
-            :class="
-                variant === 'small'
-                    ? 'mb-0.5 text-base font-medium'
-                    : 'text-xl font-semibold tracking-tight'
-            "
+            v-if="title"
+            class="font-display text-2xl tracking-tight text-signal"
         >
             {{ title }}
         </h2>
-        <p v-if="description" class="text-sm text-muted-foreground">
+        <p v-if="description" class="text-sm leading-relaxed text-signal-muted">
             {{ description }}
         </p>
-    </header>
+        <slot />
+    </div>
 </template>

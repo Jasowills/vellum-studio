@@ -18,6 +18,7 @@ Vellum is a Laravel 13 + Vue 3 + Inertia + TypeScript + Tailwind 4 application t
 - See a **live estimate range** before submitting, derived from Pixelforge's published pricing and token rules.
 - Submit through a stable, per-user idempotency key; retries reuse the same key and cannot create or charge twice.
 - Track `pending → queued → processing → succeeded/failed` through signed webhooks, with polling as a safety net.
+- Hand a prompt from the landing page through login, or straight into a prefilled studio composer, without needing a backend change.
 - Archive every succeeded image to private storage and serve it through an authenticated Vellum route, so it survives expiry of the provider's signed URL.
 - Keep immutable provider cost, customer charge, and settlement records in integer **nanodollars**.
 - Reconcile local charges against Pixelforge's per-day usage report, in the UI and from the CLI.
@@ -34,7 +35,7 @@ Vellum is a Laravel 13 + Vue 3 + Inertia + TypeScript + Tailwind 4 application t
 | Auth          | Laravel Fortify (email/password, passkeys, 2FA, verification)             |
 | Queue / cache | Redis (configurable)                                                      |
 | Database      | MySQL in development/demo; SQLite in tests                                |
-| Design        | Warm-paper editorial system — Fraunces, Instrument Sans, Spline Sans Mono |
+| Design        | SIGNAL monochrome system — Geist, Instrument Serif, Geist Mono, Three.js  |
 
 ---
 
@@ -154,6 +155,8 @@ Tests use HTTP fakes for Pixelforge; no test makes an external API call. Coverag
 - usage reconciliation and provider-day token totals
 - library pagination/resource shape (regression test for nested `data` payloads)
 
+The SIGNAL frontend was also checked in a real browser at 1440, 1280, 768, and 390 px across the landing page, auth, studio, library, generation detail, usage, admin report, and settings. That pass verified no horizontal overflow, no broken images, no console errors, exact-font loading, strict monochrome rendering, reduced-motion behavior, WebGL lifecycle cleanup on route changes, and both authenticated and unauthenticated prompt handoff.
+
 Frontend checks:
 
 ```bash
@@ -213,8 +216,9 @@ app/
   Http/Resources/GenerationResource.php
 resources/js/
   pages/                            # Welcome, Studio, Library, Generation, Usage, Admin/Report
-  components/                       # GenerationCard, StatusBadge, BrandMark, AppLayout
+  components/                       # GenerationCard, StatusBadge, BrandMark, SignalField, AppLayout
   lib/vellum.ts                     # client-side money/date helpers
+  lib/pendingPrompt.ts              # short-lived landing-to-studio prompt handoff
 tests/                              # Feature + Unit, faked provider only
 ```
 

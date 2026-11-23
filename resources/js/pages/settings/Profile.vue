@@ -92,7 +92,7 @@ const user = computed(() => page.props.auth.user);
 
                 <div
                     v-if="page.props.status === 'verification-link-sent'"
-                    class="mt-2 text-sm font-medium text-green-600"
+                    class="mt-2 border-l-2 border-signal pl-2 text-sm font-medium text-signal"
                 >
                     A new verification link has been sent to your email address.
                 </div>

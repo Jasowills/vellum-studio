@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { Form, Head, setLayoutProps } from '@inertiajs/vue3';
 import { computed, ref, watchEffect } from 'vue';
+import { AlertCircle } from '@lucide/vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Spinner } from '@/components/ui/spinner';
 import {
     InputOTP,
     InputOTPGroup,
@@ -45,24 +48,35 @@ const toggleRecoveryMode = (clearErrors: () => void): void => {
     clearErrors();
     code.value = '';
 };
+
+const inputClass =
+    'h-11 rounded-none border-line bg-paper-deep text-signal placeholder:text-signal-muted dark:bg-paper-deep focus-visible:border-signal focus-visible:ring-signal/25';
+const labelClass =
+    'font-mono text-[0.68rem] font-normal tracking-[0.16em] text-signal uppercase';
+const submitClass =
+    'mt-1 h-11 w-full border border-signal bg-signal font-mono text-[0.72rem] tracking-[0.16em] text-signal-invert uppercase hover:bg-signal/85 focus-visible:ring-signal disabled:opacity-60';
+const errorClass = '[&_p]:text-signal!';
+const toggleClass =
+    'text-signal underline decoration-signal-line underline-offset-4 transition-colors hover:decoration-signal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal';
 </script>
 
 <template>
     <Head title="Two-factor authentication" />
 
-    <div class="space-y-6">
+    <div class="grid gap-6">
         <template v-if="!showRecoveryInput">
             <Form
                 v-bind="store.form()"
-                class="space-y-4"
+                class="grid gap-5"
                 reset-on-error
                 @error="code = ''"
                 #default="{ errors, processing, clearErrors }"
             >
                 <input type="hidden" name="code" :value="code" />
-                <div
-                    class="flex flex-col items-center justify-center space-y-3 text-center"
-                >
+                <div class="grid gap-2">
+                    <Label for="otp" :class="labelClass"
+                        >Authentication code</Label
+                    >
                     <div class="flex w-full items-center justify-center">
                         <InputOTP
                             id="otp"
@@ -70,26 +84,50 @@ const toggleRecoveryMode = (clearErrors: () => void): void => {
                             :maxlength="6"
                             :disabled="processing"
                             autofocus
+                            class="w-full justify-center"
+                            :aria-invalid="Boolean(errors.code)"
+                            aria-describedby="otp-error"
                         >
                             <InputOTPGroup>
                                 <InputOTPSlot
                                     v-for="index in 6"
                                     :key="index"
                                     :index="index - 1"
+                                    class="size-11 border-line bg-paper-deep text-signal first:border-l data-[active=true]:border-signal data-[active=true]:ring-signal/25"
                                 />
                             </InputOTPGroup>
                         </InputOTP>
                     </div>
-                    <InputError :message="errors.code" />
+                    <div
+                        id="otp-error"
+                        :class="errorClass"
+                        class="flex min-h-5 items-start gap-2"
+                        aria-live="polite"
+                    >
+                        <AlertCircle
+                            v-if="errors.code"
+                            class="mt-0.5 size-3.5 shrink-0 text-signal"
+                            aria-hidden="true"
+                        />
+                        <InputError :message="errors.code" />
+                    </div>
                 </div>
-                <Button type="submit" class="w-full" :disabled="processing"
-                    >Continue</Button
+                <Button
+                    type="submit"
+                    :class="submitClass"
+                    :disabled="processing"
+                    :aria-busy="processing"
                 >
-                <div class="text-center text-sm text-muted-foreground">
+                    <Spinner v-if="processing" />
+                    {{ processing ? 'Verifying...' : 'Continue' }}
+                </Button>
+                <div
+                    class="border-t border-line pt-5 text-center text-sm text-signal-muted"
+                >
                     <span>or you can </span>
                     <button
                         type="button"
-                        class="text-foreground underline decoration-neutral-300 underline-offset-4 transition-colors duration-300 ease-out hover:decoration-current! dark:decoration-neutral-500"
+                        :class="toggleClass"
                         @click="() => toggleRecoveryMode(clearErrors)"
                     >
                         {{ authConfigContent.buttonText }}
@@ -101,27 +139,56 @@ const toggleRecoveryMode = (clearErrors: () => void): void => {
         <template v-else>
             <Form
                 v-bind="store.form()"
-                class="space-y-4"
+                class="grid gap-5"
                 reset-on-error
                 #default="{ errors, processing, clearErrors }"
             >
-                <Input
-                    name="recovery_code"
-                    type="text"
-                    placeholder="Enter recovery code"
-                    v-focus
-                    required
-                />
-                <InputError :message="errors.recovery_code" />
-                <Button type="submit" class="w-full" :disabled="processing"
-                    >Continue</Button
+                <div class="grid gap-2">
+                    <Label for="recovery_code" :class="labelClass">
+                        Recovery code
+                    </Label>
+                    <Input
+                        id="recovery_code"
+                        name="recovery_code"
+                        type="text"
+                        placeholder="Enter recovery code"
+                        v-focus
+                        required
+                        :class="inputClass"
+                        :aria-invalid="Boolean(errors.recovery_code)"
+                        aria-describedby="recovery-code-error"
+                    />
+                    <div
+                        id="recovery-code-error"
+                        :class="errorClass"
+                        class="flex min-h-5 items-start gap-2"
+                        aria-live="polite"
+                    >
+                        <AlertCircle
+                            v-if="errors.recovery_code"
+                            class="mt-0.5 size-3.5 shrink-0 text-signal"
+                            aria-hidden="true"
+                        />
+                        <InputError :message="errors.recovery_code" />
+                    </div>
+                </div>
+                <Button
+                    type="submit"
+                    :class="submitClass"
+                    :disabled="processing"
+                    :aria-busy="processing"
                 >
+                    <Spinner v-if="processing" />
+                    {{ processing ? 'Verifying...' : 'Continue' }}
+                </Button>
 
-                <div class="text-center text-sm text-muted-foreground">
+                <div
+                    class="border-t border-line pt-5 text-center text-sm text-signal-muted"
+                >
                     <span>or you can </span>
                     <button
                         type="button"
-                        class="text-foreground underline decoration-neutral-300 underline-offset-4 transition-colors duration-300 ease-out hover:decoration-current! dark:decoration-neutral-500"
+                        :class="toggleClass"
                         @click="() => toggleRecoveryMode(clearErrors)"
                     >
                         {{ authConfigContent.buttonText }}

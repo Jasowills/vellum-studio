@@ -9,16 +9,21 @@
 
 @theme inline {
     --font-sans:
-        'Instrument Sans', ui-sans-serif, system-ui, sans-serif,
-        'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
-        'Noto Color Emoji';
-    --font-display: 'Fraunces', ui-serif, Georgia, 'Times New Roman', serif;
+        'Geist', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
+        'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-display:
+        'Instrument Serif', ui-serif, Georgia, 'Times New Roman', serif;
     --font-mono:
-        'Spline Sans Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+        'Geist Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
 
-    --radius-lg: var(--radius);
-    --radius-md: calc(var(--radius) - 2px);
-    --radius-sm: calc(var(--radius) - 4px);
+    --radius-xs: 0px;
+    --radius-sm: 0px;
+    --radius-md: 0px;
+    --radius-lg: 0px;
+    --radius-xl: 0px;
+    --radius-2xl: 0px;
+    --radius-3xl: 0px;
+    --radius-4xl: 0px;
 
     --color-background: var(--background);
     --color-foreground: var(--foreground);
@@ -34,37 +39,34 @@
     --color-moss-soft: var(--moss-soft);
     --color-ochre: var(--ochre);
 
+    --color-signal: var(--signal);
+    --color-signal-invert: var(--signal-invert);
+    --color-signal-muted: var(--signal-muted);
+    --color-signal-faint: var(--signal-faint);
+    --color-signal-line: var(--signal-line);
+
     --color-card: var(--card);
     --color-card-foreground: var(--card-foreground);
-
     --color-popover: var(--popover);
     --color-popover-foreground: var(--popover-foreground);
-
     --color-primary: var(--primary);
     --color-primary-foreground: var(--primary-foreground);
-
     --color-secondary: var(--secondary);
     --color-secondary-foreground: var(--secondary-foreground);
-
     --color-muted: var(--muted);
     --color-muted-foreground: var(--muted-foreground);
-
     --color-accent: var(--accent);
     --color-accent-foreground: var(--accent-foreground);
-
     --color-destructive: var(--destructive);
     --color-destructive-foreground: var(--destructive-foreground);
-
     --color-border: var(--border);
     --color-input: var(--input);
     --color-ring: var(--ring);
-
     --color-chart-1: var(--chart-1);
     --color-chart-2: var(--chart-2);
     --color-chart-3: var(--chart-3);
     --color-chart-4: var(--chart-4);
     --color-chart-5: var(--chart-5);
-
     --color-sidebar: var(--sidebar);
     --color-sidebar-foreground: var(--sidebar-foreground);
     --color-sidebar-primary: var(--sidebar-primary);
@@ -76,95 +78,114 @@
 }
 
 :root {
-    --background: #f2ecdf;
-    --foreground: #211d17;
-    --paper: #fbf7ee;
-    --paper-deep: #efe7d7;
-    --ink: #211d17;
-    --ink-soft: #5f5749;
-    --line: #d5c9b4;
-    --line-soft: #e6ddcd;
-    --vermilion: #c0442b;
-    --vermilion-soft: #f1ded5;
-    --moss: #4d5b42;
-    --moss-soft: #e3e7d9;
-    --ochre: #9a6a24;
+    color-scheme: dark;
 
-    --card: #fbf7ee;
-    --card-foreground: #211d17;
-    --popover: #fbf7ee;
-    --popover-foreground: #211d17;
-    --primary: #211d17;
-    --primary-foreground: #fbf7ee;
-    --secondary: #e9e0cf;
-    --secondary-foreground: #211d17;
-    --muted: #ebe3d4;
-    --muted-foreground: #6b6355;
-    --accent: #efe6d7;
-    --accent-foreground: #211d17;
-    --destructive: #b3402b;
-    --destructive-foreground: #fbf7ee;
-    --border: #d5c9b4;
-    --input: #cfc2ab;
-    --ring: #c0442b;
-    --chart-1: #c0442b;
-    --chart-2: #4d5b42;
-    --chart-3: #9a6a24;
-    --chart-4: #7b6f5b;
-    --chart-5: #38566b;
-    --radius: 0.375rem;
-    --sidebar: #f7f1e5;
-    --sidebar-foreground: #211d17;
-    --sidebar-primary: #211d17;
-    --sidebar-primary-foreground: #fbf7ee;
-    --sidebar-accent: #ece3d1;
-    --sidebar-accent-foreground: #211d17;
-    --sidebar-border: #d5c9b4;
-    --sidebar-ring: #c0442b;
+    --background: #050505;
+    --foreground: #f4f4f4;
+    --paper: #0d0d0d;
+    --paper-deep: #151515;
+    --ink: #f4f4f4;
+    --ink-soft: #a1a1a1;
+    --line: #2b2b2b;
+    --line-soft: #1b1b1b;
+
+    /* Legacy semantic aliases now resolve to the SIGNAL monochrome scale. */
+    --vermilion: #f4f4f4;
+    --vermilion-soft: #1a1a1a;
+    --moss: #f4f4f4;
+    --moss-soft: #1a1a1a;
+    --ochre: #8a8a8a;
+
+    --signal: #f4f4f4;
+    --signal-invert: #050505;
+    --signal-muted: #9a9a9a;
+    --signal-faint: #5f5f5f;
+    --signal-line: #2b2b2b;
+
+    --card: #0d0d0d;
+    --card-foreground: #f4f4f4;
+    --popover: #121212;
+    --popover-foreground: #f4f4f4;
+    --primary: #f4f4f4;
+    --primary-foreground: #050505;
+    --secondary: #181818;
+    --secondary-foreground: #f4f4f4;
+    --muted: #141414;
+    --muted-foreground: #a1a1a1;
+    --accent: #1c1c1c;
+    --accent-foreground: #f4f4f4;
+    --destructive: #e4e4e4;
+    --destructive-foreground: #050505;
+    --border: #2b2b2b;
+    --input: #2b2b2b;
+    --ring: #f4f4f4;
+    --chart-1: #f4f4f4;
+    --chart-2: #b8b8b8;
+    --chart-3: #8a8a8a;
+    --chart-4: #5f5f5f;
+    --chart-5: #2b2b2b;
+    --radius: 0px;
+    --sidebar: #090909;
+    --sidebar-foreground: #f4f4f4;
+    --sidebar-primary: #f4f4f4;
+    --sidebar-primary-foreground: #050505;
+    --sidebar-accent: #191919;
+    --sidebar-accent-foreground: #f4f4f4;
+    --sidebar-border: #262626;
+    --sidebar-ring: #f4f4f4;
 }
 
-/* Vellum is a daylight studio. The dark tokens keep the shadcn primitives
-   legible if an old appearance cookie applies the class, without turning the
-   interface into a second product. */
+/* The product is intentionally monochrome. The class remains for shadcn
+   compatibility and system-preference code, but resolves to the same scale. */
 .dark {
-    --background: #f2ecdf;
-    --foreground: #211d17;
-    --paper: #fbf7ee;
-    --paper-deep: #efe7d7;
-    --ink: #211d17;
-    --ink-soft: #5f5749;
-    --line: #d5c9b4;
-    --line-soft: #e6ddcd;
-    --vermilion: #c0442b;
-    --vermilion-soft: #f1ded5;
-    --moss: #4d5b42;
-    --moss-soft: #e3e7d9;
-    --ochre: #9a6a24;
-    --card: #fbf7ee;
-    --card-foreground: #211d17;
-    --popover: #fbf7ee;
-    --popover-foreground: #211d17;
-    --primary: #211d17;
-    --primary-foreground: #fbf7ee;
-    --secondary: #e9e0cf;
-    --secondary-foreground: #211d17;
-    --muted: #ebe3d4;
-    --muted-foreground: #6b6355;
-    --accent: #efe6d7;
-    --accent-foreground: #211d17;
-    --destructive: #b3402b;
-    --destructive-foreground: #fbf7ee;
-    --border: #d5c9b4;
-    --input: #cfc2ab;
-    --ring: #c0442b;
-    --sidebar: #f7f1e5;
-    --sidebar-foreground: #211d17;
-    --sidebar-primary: #211d17;
-    --sidebar-primary-foreground: #fbf7ee;
-    --sidebar-accent: #ece3d1;
-    --sidebar-accent-foreground: #211d17;
-    --sidebar-border: #d5c9b4;
-    --sidebar-ring: #c0442b;
+    --background: #050505;
+    --foreground: #f4f4f4;
+    --paper: #0d0d0d;
+    --paper-deep: #151515;
+    --ink: #f4f4f4;
+    --ink-soft: #a1a1a1;
+    --line: #2b2b2b;
+    --line-soft: #1b1b1b;
+    --vermilion: #f4f4f4;
+    --vermilion-soft: #1a1a1a;
+    --moss: #f4f4f4;
+    --moss-soft: #1a1a1a;
+    --ochre: #8a8a8a;
+    --signal: #f4f4f4;
+    --signal-invert: #050505;
+    --signal-muted: #9a9a9a;
+    --signal-faint: #5f5f5f;
+    --signal-line: #2b2b2b;
+    --card: #0d0d0d;
+    --card-foreground: #f4f4f4;
+    --popover: #121212;
+    --popover-foreground: #f4f4f4;
+    --primary: #f4f4f4;
+    --primary-foreground: #050505;
+    --secondary: #181818;
+    --secondary-foreground: #f4f4f4;
+    --muted: #141414;
+    --muted-foreground: #a1a1a1;
+    --accent: #1c1c1c;
+    --accent-foreground: #f4f4f4;
+    --destructive: #e4e4e4;
+    --destructive-foreground: #050505;
+    --border: #2b2b2b;
+    --input: #2b2b2b;
+    --ring: #f4f4f4;
+    --chart-1: #f4f4f4;
+    --chart-2: #b8b8b8;
+    --chart-3: #8a8a8a;
+    --chart-4: #5f5f5f;
+    --chart-5: #2b2b2b;
+    --sidebar: #090909;
+    --sidebar-foreground: #f4f4f4;
+    --sidebar-primary: #f4f4f4;
+    --sidebar-primary-foreground: #050505;
+    --sidebar-accent: #191919;
+    --sidebar-accent-foreground: #f4f4f4;
+    --sidebar-border: #262626;
+    --sidebar-ring: #f4f4f4;
 }
 
 @layer base {
@@ -174,7 +195,7 @@
 
     html {
         background-color: var(--background);
-        color-scheme: light;
+        color-scheme: dark;
         scroll-behavior: smooth;
         -webkit-font-smoothing: antialiased;
         text-rendering: optimizeLegibility;
@@ -189,12 +210,12 @@
     }
 
     ::selection {
-        background: var(--vermilion);
-        color: var(--paper);
+        background: var(--signal);
+        color: var(--signal-invert);
     }
 
     :focus-visible {
-        outline: 2px solid var(--vermilion);
+        outline: 2px solid var(--signal);
         outline-offset: 3px;
     }
 
@@ -217,44 +238,61 @@
     .eyebrow {
         font-family: var(--font-mono);
         font-size: 0.6875rem;
-        font-weight: 500;
-        letter-spacing: 0.16em;
+        font-weight: 400;
+        letter-spacing: 0.2em;
         text-transform: uppercase;
-        color: var(--ink-soft);
+        color: var(--signal-muted);
     }
 
     .ledger {
         font-family: var(--font-mono);
         font-variant-numeric: tabular-nums;
-        letter-spacing: -0.01em;
+        letter-spacing: -0.02em;
     }
 
     .display-title {
         font-family: var(--font-display);
         font-weight: 400;
         letter-spacing: -0.035em;
-        line-height: 0.98;
-        font-variation-settings:
-            'opsz' 96,
-            'SOFT' 50,
-            'WONK' 1;
+        line-height: 0.95;
     }
 
-    .paper-panel {
+    .signal-panel {
         background: var(--paper);
         border: 1px solid var(--line);
-        box-shadow:
-            0 1px 0 rgba(33, 29, 23, 0.04),
-            0 18px 50px -38px rgba(33, 29, 23, 0.45);
     }
 
-    .rule {
+    .signal-grid {
+        background-image:
+            linear-gradient(
+                to right,
+                color-mix(in srgb, var(--signal) 8%, transparent) 1px,
+                transparent 1px
+            ),
+            linear-gradient(
+                to bottom,
+                color-mix(in srgb, var(--signal) 8%, transparent) 1px,
+                transparent 1px
+            );
+        background-size: 48px 48px;
+    }
+
+    .signal-verticals {
+        background-image: linear-gradient(
+            to right,
+            color-mix(in srgb, var(--signal) 7%, transparent) 1px,
+            transparent 1px
+        );
+        background-size: 25% 100%;
+    }
+
+    .signal-rule {
         border-top: 1px solid var(--line);
     }
 
     .link-underline {
         text-decoration: underline;
-        text-decoration-color: var(--line);
+        text-decoration-color: var(--signal-line);
         text-underline-offset: 0.28em;
         transition:
             color 160ms ease,
@@ -262,22 +300,12 @@
     }
 
     .link-underline:hover {
-        color: var(--vermilion);
-        text-decoration-color: var(--vermilion);
+        color: var(--signal);
+        text-decoration-color: var(--signal);
     }
 
     .focus-ring {
-        @apply focus-visible:ring-2 focus-visible:ring-vermilion focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none;
-    }
-
-    .grain::after {
-        content: '';
-        position: absolute;
-        inset: 0;
-        pointer-events: none;
-        opacity: 0.16;
-        mix-blend-mode: multiply;
-        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+        @apply focus-visible:ring-2 focus-visible:ring-signal focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none;
     }
 
     .skeleton-sheen {
@@ -285,7 +313,7 @@
             linear-gradient(
                 100deg,
                 transparent 20%,
-                rgba(251, 247, 238, 0.72) 45%,
+                rgba(244, 244, 244, 0.09) 45%,
                 transparent 70%
             ),
             var(--paper-deep);
@@ -294,12 +322,24 @@
     }
 
     .status-dot {
-        width: 0.4375rem;
-        height: 0.4375rem;
-        border-radius: 999px;
+        width: 0.375rem;
+        height: 0.375rem;
         display: inline-block;
         flex: none;
     }
+}
+
+[data-reveal='armed'] {
+    opacity: 0;
+    transform: translateY(18px);
+    transition:
+        opacity 700ms cubic-bezier(0.16, 1, 0.3, 1),
+        transform 700ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-reveal='visible'] {
+    opacity: 1;
+    transform: none;
 }
 
 @keyframes sheen {
@@ -325,10 +365,19 @@
 @keyframes breathe {
     0%,
     100% {
-        opacity: 0.55;
+        opacity: 0.45;
     }
     50% {
         opacity: 1;
+    }
+}
+
+@keyframes signal-scan {
+    from {
+        transform: translateX(-100%);
+    }
+    to {
+        transform: translateX(100%);
     }
 }
 
@@ -340,10 +389,21 @@
     animation: breathe 2.4s ease-in-out infinite;
 }
 
+.animate-signal-scan {
+    animation: signal-scan 3.2s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
     .animate-rise,
     .animate-breathe,
+    .animate-signal-scan,
     .skeleton-sheen {
         animation: none;
+    }
+
+    [data-reveal='armed'],
+    [data-reveal='visible'] {
+        opacity: 1;
+        transform: none;
     }
 }

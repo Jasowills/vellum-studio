@@ -1,15 +1,17 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
 import {
+    AlertTriangle,
     ArrowLeft,
     Check,
     Clock3,
     Copy,
+    Hash,
     ImageOff,
     RefreshCw,
     Sparkles,
 } from '@lucide/vue';
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import StatusBadge from '@/components/StatusBadge.vue';
 import {
     copyText,
@@ -17,7 +19,6 @@ import {
     formatRelative,
     generationAlt,
     qualityLabel,
-    ratioCss,
     ratioLabel,
 } from '@/lib/vellum';
 import type { Generation } from '@/types';
@@ -26,18 +27,79 @@ const props = defineProps<{
     generation: Generation;
 }>();
 
-const copied = ref(false);
+const promptCopied = ref(false);
+const idCopied = ref(false);
 const refreshed = ref(false);
+const refreshing = ref(false);
+const imageFailed = ref(false);
 
 const active = computed(() =>
     ['pending', 'queued', 'processing'].includes(props.generation.status),
 );
 
+const imageUrl = computed(() => props.generation.image.url);
+const canShowImage = computed(
+    () =>
+        Boolean(imageUrl.value) &&
+        props.generation.image.available &&
+        !imageFailed.value,
+);
+
+function resetImageFailure(): void {
+    imageFailed.value = false;
+}
+
+watch(imageUrl, resetImageFailure);
+watch(() => props.generation.image.available, resetImageFailure);
+
+const imageFallback = computed(() => {
+    if (imageFailed.value) {
+        return {
+            title: 'The plate could not be loaded.',
+            detail: 'The image route did not return a usable file. Refresh to try again.',
+        };
+    }
+
+    if (props.generation.image.expired) {
+        return {
+            title: 'The signed link expired.',
+            detail: 'No archived copy was saved before the provider link lapsed.',
+        };
+    }
+
+    return {
+        title: 'No image was produced.',
+        detail: 'The provider returned no image for this attempt. Failed generations are never charged.',
+    };
+});
+
 const charge = computed(() => props.generation.charge);
+
+const recordedCost = computed(() =>
+    charge.value || !props.generation.cost.customer_charge
+        ? null
+        : props.generation.cost,
+);
+
 const usage = computed(() => charge.value?.tokens ?? props.generation.usage);
 const hasUsage = computed(() => (usage.value.total_tokens ?? 0) > 0);
+
+/* provider_cost arrives from the resource as an already formatted string. */
 const providerCost = computed(
     () => props.generation.provider?.provider_cost ?? null,
+);
+
+const tokenRows = computed(() =>
+    [
+        { label: 'Input text', value: usage.value.input_text_tokens },
+        { label: 'Input images', value: usage.value.input_image_tokens },
+        { label: 'Output', value: usage.value.output_tokens },
+        { label: 'Reasoning', value: usage.value.reasoning_tokens },
+        { label: 'Total', value: usage.value.total_tokens },
+    ].map((row) => ({
+        label: row.label,
+        display: (row.value ?? 0).toLocaleString(),
+    })),
 );
 
 const timeline = computed(() => {
@@ -55,71 +117,153 @@ const timeline = computed(() => {
 const hasTimeline = computed(() => timeline.value.length > 0);
 
 let pollTimer: ReturnType<typeof setInterval> | undefined;
+let promptTimer: number | undefined;
+let idTimer: number | undefined;
+let refreshTimer: number | undefined;
 
-function poll(): void {
-    if (!active.value) {
+function stopPolling(): void {
+    if (pollTimer !== undefined) {
+        window.clearInterval(pollTimer);
+        pollTimer = undefined;
+    }
+}
+
+function startPolling(): void {
+    if (pollTimer !== undefined) {
         return;
     }
 
+    pollTimer = window.setInterval(() => {
+        if (
+            active.value &&
+            document.visibilityState === 'visible' &&
+            !refreshing.value
+        ) {
+            void refresh();
+        }
+    }, 5000);
+}
+
+function syncPolling(): void {
+    if (active.value && document.visibilityState === 'visible') {
+        startPolling();
+    } else {
+        stopPolling();
+    }
+}
+
+async function refresh(): Promise<void> {
+    if (refreshing.value) {
+        return;
+    }
+
+    refreshing.value = true;
+
     router.reload({
         only: ['generation'],
+        onFinish: () => {
+            refreshing.value = false;
+        },
         onSuccess: () => {
             refreshed.value = true;
-            window.setTimeout(() => (refreshed.value = false), 1600);
+            window.clearTimeout(refreshTimer);
+            refreshTimer = window.setTimeout(() => {
+                refreshed.value = false;
+            }, 1600);
         },
     });
 }
 
 async function copyPrompt(): Promise<void> {
     if (await copyText(props.generation.prompt)) {
-        copied.value = true;
-        window.setTimeout(() => (copied.value = false), 2000);
+        promptCopied.value = true;
+        window.clearTimeout(promptTimer);
+        promptTimer = window.setTimeout(() => {
+            promptCopied.value = false;
+        }, 2000);
     }
 }
 
+async function copyId(): Promise<void> {
+    if (await copyText(props.generation.id)) {
+        idCopied.value = true;
+        window.clearTimeout(idTimer);
+        idTimer = window.setTimeout(() => {
+            idCopied.value = false;
+        }, 2000);
+    }
+}
+
+watch(active, syncPolling);
+
 onMounted(() => {
-    pollTimer = window.setInterval(poll, 5000);
+    document.addEventListener('visibilitychange', syncPolling);
+    syncPolling();
 });
 
 onBeforeUnmount(() => {
-    window.clearInterval(pollTimer);
+    document.removeEventListener('visibilitychange', syncPolling);
+    stopPolling();
+    window.clearTimeout(promptTimer);
+    window.clearTimeout(idTimer);
+    window.clearTimeout(refreshTimer);
 });
 </script>
 
 <template>
     <Head :title="`Plate ${generation.id}`" />
 
-    <div class="space-y-10">
-        <div class="flex flex-wrap items-center justify-between gap-4">
+    <div class="space-y-8 lg:space-y-10">
+        <div
+            class="flex flex-col gap-3 border-b border-line pb-4 sm:flex-row sm:items-center sm:justify-between"
+        >
             <Link
                 href="/library"
-                class="group inline-flex items-center gap-2 font-mono text-[0.6rem] tracking-[0.14em] text-ink-soft uppercase transition-colors hover:text-vermilion"
+                class="focus-ring group inline-flex items-center gap-2 font-mono text-[0.62rem] tracking-[0.14em] text-signal-muted uppercase transition-colors hover:text-signal"
             >
                 <ArrowLeft
-                    class="size-3.5 transition-transform group-hover:-translate-x-0.5"
+                    class="size-3.5 transition-transform group-hover:-translate-x-0.5 motion-reduce:transform-none"
                     aria-hidden="true"
                 />
-                Back to the library
+                Index / Library
             </Link>
-            <div class="flex items-center gap-3">
+
+            <div class="flex flex-wrap items-center gap-4">
                 <span
                     v-if="refreshed"
-                    class="font-mono text-[0.55rem] tracking-[0.14em] text-moss uppercase"
-                    >Refreshed</span
+                    class="font-mono text-[0.58rem] tracking-[0.14em] text-signal uppercase"
+                    role="status"
+                    aria-live="polite"
+                    >Updated</span
                 >
+                <span
+                    v-if="active"
+                    class="inline-flex items-center gap-2 font-mono text-[0.58rem] tracking-[0.12em] text-signal-muted uppercase"
+                >
+                    <span
+                        class="status-dot animate-breathe bg-signal"
+                        aria-hidden="true"
+                    />
+                    Live · checks every 5s
+                </span>
                 <button
                     type="button"
-                    class="focus-ring inline-flex items-center gap-2 border border-line px-3 py-1.5 font-mono text-[0.58rem] tracking-[0.1em] text-ink-soft uppercase transition-colors hover:border-ink hover:text-ink"
-                    @click="poll"
+                    class="focus-ring inline-flex items-center gap-2 border border-line px-3 py-1.5 font-mono text-[0.6rem] tracking-[0.12em] text-signal-muted uppercase transition-colors hover:border-signal hover:text-signal disabled:cursor-wait disabled:opacity-60"
+                    :disabled="refreshing"
+                    @click="refresh"
                 >
-                    <RefreshCw class="size-3" aria-hidden="true" />
+                    <RefreshCw
+                        class="size-3 motion-reduce:animate-none"
+                        :class="refreshing ? 'animate-spin' : ''"
+                        aria-hidden="true"
+                    />
                     Refresh
                 </button>
             </div>
         </div>
 
         <header
-            class="flex flex-col justify-between gap-6 border-b border-line pb-8 lg:flex-row lg:items-end"
+            class="flex flex-col gap-7 lg:flex-row lg:items-end lg:justify-between"
         >
             <div class="min-w-0 space-y-4">
                 <div class="flex flex-wrap items-center gap-3">
@@ -128,174 +272,189 @@ onBeforeUnmount(() => {
                         :tone="generation.status_tone"
                         :pulse="active"
                     />
-                    <span
-                        class="font-mono text-[0.58rem] tracking-[0.12em] text-ink-soft uppercase"
+                    <button
+                        type="button"
+                        class="focus-ring inline-flex max-w-full items-center gap-2 border border-line px-2 py-1 font-mono text-[0.6rem] tracking-[0.08em] text-signal-muted transition-colors hover:border-signal hover:text-signal"
+                        :aria-label="
+                            idCopied
+                                ? 'Generation ID copied'
+                                : 'Copy generation ID'
+                        "
+                        @click="copyId"
                     >
-                        Plate {{ generation.id }}
-                    </span>
+                        <Hash class="size-3 shrink-0" aria-hidden="true" />
+                        <span class="truncate">{{ generation.id }}</span>
+                        <Check
+                            v-if="idCopied"
+                            class="size-3 shrink-0"
+                            aria-hidden="true"
+                        />
+                        <Copy
+                            v-else
+                            class="size-3 shrink-0"
+                            aria-hidden="true"
+                        />
+                    </button>
                 </div>
+
                 <h1
-                    class="display-title max-w-[24ch] text-[clamp(2.1rem,4vw,3.5rem)] text-ink"
+                    class="display-title max-w-[22ch] text-[clamp(2.2rem,4vw,3.6rem)] text-signal"
                 >
-                    <template v-if="active">The image is developing.</template>
+                    <template v-if="active">The plate is developing.</template>
                     <template v-else-if="generation.status === 'failed'">
                         This plate did not arrive.
                     </template>
-                    <template v-else>Your image is ready.</template>
+                    <template v-else>Your plate is ready.</template>
                 </h1>
-                <p
-                    v-if="active"
-                    class="max-w-xl text-sm leading-relaxed text-ink-soft"
-                >
-                    Pixelforge is working. This page checks again every five
-                    seconds, and a signed webhook will settle the charge the
-                    moment it finishes. You may leave safely.
-                </p>
-                <p
-                    v-else-if="generation.status === 'failed'"
-                    class="max-w-xl text-sm leading-relaxed text-ink-soft"
-                >
-                    {{
-                        generation.failure?.message ??
-                        'Pixelforge could not complete this generation.'
-                    }}
-                    <span class="text-ink">Nothing was charged.</span>
-                </p>
-                <p
-                    v-else
-                    class="max-w-xl text-sm leading-relaxed text-ink-soft"
-                >
-                    Archived privately by Vellum and served through your
-                    library, even after the provider’s signed link expires.
+
+                <p class="max-w-xl text-sm leading-relaxed text-signal-muted">
+                    <template v-if="active">
+                        The provider is rendering this plate. This page checks
+                        again every five seconds while it is visible, and a
+                        signed webhook settles the charge when the work
+                        finishes. You may leave safely.
+                    </template>
+                    <template v-else-if="generation.status === 'failed'">
+                        {{
+                            generation.failure?.message ??
+                            'The provider could not complete this generation.'
+                        }}
+                        Nothing was charged.
+                    </template>
+                    <template v-else>
+                        Archived privately by Vellum and served from your
+                        library, even after the provider’s signed link expires.
+                    </template>
                 </p>
             </div>
 
-            <div class="flex shrink-0 flex-wrap items-center gap-2">
+            <div class="flex shrink-0 flex-wrap gap-2">
                 <button
                     type="button"
-                    class="focus-ring inline-flex items-center gap-2 border border-line px-3.5 py-2 text-xs font-medium text-ink transition-colors hover:border-ink"
+                    class="focus-ring inline-flex items-center gap-2 border border-line px-3.5 py-2 font-mono text-[0.62rem] tracking-[0.12em] text-signal-muted uppercase transition-colors hover:border-signal hover:text-signal"
+                    :aria-live="promptCopied ? 'polite' : undefined"
                     @click="copyPrompt"
                 >
                     <Check
-                        v-if="copied"
-                        class="size-3.5 text-moss"
+                        v-if="promptCopied"
+                        class="size-3.5"
                         aria-hidden="true"
                     />
                     <Copy v-else class="size-3.5" aria-hidden="true" />
-                    {{ copied ? 'Prompt copied' : 'Copy prompt' }}
+                    {{ promptCopied ? 'Prompt copied' : 'Copy prompt' }}
                 </button>
                 <Link
                     :href="generation.prefill_url"
-                    class="focus-ring inline-flex items-center gap-2 bg-ink px-3.5 py-2 text-xs font-medium text-paper transition-colors hover:bg-vermilion"
+                    class="focus-ring inline-flex items-center gap-2 border border-signal bg-signal px-3.5 py-2 font-mono text-[0.62rem] tracking-[0.12em] text-signal-invert uppercase transition-colors hover:bg-signal-muted"
                 >
                     <Sparkles class="size-3.5" aria-hidden="true" />
                     {{
                         generation.can_retry
-                            ? 'Try this setup again'
+                            ? 'Retry this setup'
                             : 'Make a variation'
                     }}
                 </Link>
             </div>
         </header>
 
-        <div class="grid gap-10 lg:grid-cols-[minmax(0,1fr)_23rem] lg:gap-12">
-            <div class="space-y-8">
-                <figure class="paper-panel p-2 sm:p-3">
-                    <div
-                        class="relative overflow-hidden bg-paper-deep"
-                        :style="{ aspectRatio: ratioCss(generation.size) }"
+        <figure class="border border-line bg-paper">
+            <div
+                class="flex flex-wrap items-center justify-between gap-3 border-b border-line px-4 py-3 sm:px-6"
+            >
+                <p class="eyebrow text-[0.58rem]">
+                    Plate / {{ generation.id }}
+                </p>
+                <p
+                    class="font-mono text-[0.58rem] tracking-[0.12em] text-signal-faint uppercase"
+                >
+                    {{ ratioLabel(generation.size) }} ·
+                    {{ qualityLabel(generation.quality) }} ·
+                    {{ generation.size }}
+                </p>
+            </div>
+
+            <div
+                class="relative flex min-h-[20rem] items-center justify-center bg-background px-4 py-8 sm:min-h-[28rem] sm:px-8 lg:min-h-[36rem]"
+            >
+                <img
+                    v-if="canShowImage"
+                    :src="imageUrl ?? undefined"
+                    :alt="generationAlt(generation)"
+                    class="max-h-[68vh] w-full object-contain grayscale"
+                    @error="imageFailed = true"
+                />
+
+                <div
+                    v-else-if="active"
+                    class="flex max-w-sm flex-col items-center gap-4 text-center"
+                >
+                    <span
+                        class="font-mono text-[0.65rem] tracking-[0.22em] text-signal-muted uppercase"
+                        >Developing</span
                     >
-                        <img
-                            v-if="
-                                generation.image.available &&
-                                generation.image.url
-                            "
-                            :src="generation.image.url"
-                            :alt="generationAlt(generation)"
-                            class="h-full w-full object-cover"
-                        />
+                    <span
+                        class="h-px w-16 bg-signal-faint"
+                        aria-hidden="true"
+                    />
+                    <p class="text-xs leading-relaxed text-signal-faint">
+                        The provider typically returns within 5–30 seconds. No
+                        image is shown until it exists.
+                    </p>
+                </div>
 
-                        <div
-                            v-else-if="active"
-                            class="skeleton-sheen absolute inset-0 flex flex-col items-center justify-center gap-4"
-                        >
-                            <span
-                                class="font-mono text-[0.65rem] tracking-[0.22em] text-ink-soft uppercase"
-                                >Developing</span
-                            >
-                            <span
-                                class="animate-breathe h-px w-20 bg-vermilion/70"
-                            />
-                            <span
-                                class="max-w-xs px-6 text-center text-xs leading-relaxed text-ink-soft"
-                            >
-                                The provider typically returns in 5–30 seconds.
-                            </span>
-                        </div>
+                <div
+                    v-else
+                    class="flex max-w-sm flex-col items-center gap-4 text-center"
+                >
+                    <ImageOff
+                        class="size-7 text-signal-faint"
+                        aria-hidden="true"
+                    />
+                    <p class="text-sm text-signal">
+                        {{ imageFallback.title }}
+                    </p>
+                    <p class="text-xs leading-relaxed text-signal-faint">
+                        {{ imageFallback.detail }}
+                    </p>
+                </div>
+            </div>
 
-                        <div
-                            v-else
-                            class="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-[linear-gradient(135deg,var(--paper)_0%,var(--paper-deep)_100%)] px-6 text-center"
-                        >
-                            <ImageOff
-                                class="size-7 text-ink/35"
-                                aria-hidden="true"
-                            />
-                            <span class="eyebrow">{{
-                                generation.image.expired
-                                    ? 'Signed link expired'
-                                    : 'No image was produced'
-                            }}</span>
-                            <p
-                                class="max-w-sm text-sm leading-relaxed text-ink-soft"
-                            >
-                                {{
-                                    generation.image.expired
-                                        ? 'This plate finished before Vellum archived a copy, and Pixelforge’s 24-hour link has lapsed.'
-                                        : 'The provider did not return an image. Failed generations are never charged.'
-                                }}
-                            </p>
-                        </div>
-                    </div>
-                    <figcaption
-                        class="flex flex-wrap items-center justify-between gap-3 px-1 pt-3 font-mono text-[0.58rem] tracking-[0.1em] text-ink-soft uppercase"
-                    >
-                        <span
-                            >{{ ratioLabel(generation.size) }} /
-                            {{ generation.size }}</span
-                        >
-                        <span
-                            >{{ qualityLabel(generation.quality) }} finish</span
-                        >
-                        <span v-if="generation.image.expires_at">
-                            Provider link until
-                            {{ formatRelative(generation.image.expires_at) }}
-                        </span>
-                    </figcaption>
-                </figure>
+            <figcaption
+                class="flex flex-wrap items-center justify-between gap-3 border-t border-line px-4 py-3 font-mono text-[0.58rem] tracking-[0.1em] text-signal-faint uppercase sm:px-6"
+            >
+                <span>Source / Vellum archive</span>
+                <span v-if="generation.image.expires_at">
+                    Provider link until
+                    {{ formatRelative(generation.image.expires_at) }}
+                </span>
+                <span v-else>Provider link / recorded</span>
+            </figcaption>
+        </figure>
 
-                <section class="paper-panel p-5 sm:p-6">
+        <div class="grid gap-9 lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-12">
+            <div class="min-w-0 border-y border-line">
+                <section class="py-7" aria-labelledby="prompt-heading">
                     <div class="flex items-baseline justify-between gap-4">
-                        <p class="eyebrow">The prompt</p>
-                        <span class="ledger text-[0.58rem] text-ink-soft"
-                            >{{
-                                generation.prompt.length.toLocaleString()
-                            }}
-                            characters</span
-                        >
+                        <h2 id="prompt-heading" class="eyebrow text-[0.58rem]">
+                            01 / Prompt
+                        </h2>
+                        <span class="ledger text-[0.62rem] text-signal-faint">
+                            {{ generation.prompt.length.toLocaleString() }}
+                            characters
+                        </span>
                     </div>
                     <p
-                        class="mt-4 font-display text-[1.2rem] leading-[1.55] tracking-[-0.01em] whitespace-pre-wrap text-ink"
+                        class="mt-5 font-display text-xl leading-[1.55] tracking-[-0.01em] whitespace-pre-wrap text-signal sm:text-2xl"
                     >
                         {{ generation.prompt }}
                     </p>
 
                     <div
                         v-if="generation.reference_images.length > 0"
-                        class="mt-6 border-t border-line-soft pt-4"
+                        class="mt-7 border-t border-line-soft pt-5"
                     >
-                        <p class="eyebrow">References</p>
-                        <ul class="mt-3 space-y-2">
+                        <h3 class="eyebrow text-[0.55rem]">References</h3>
+                        <ul class="mt-4 space-y-2.5">
                             <li
                                 v-for="(
                                     reference, index
@@ -304,16 +463,15 @@ onBeforeUnmount(() => {
                                 class="flex items-center gap-3"
                             >
                                 <span
-                                    class="ledger text-[0.58rem] text-ink-soft"
-                                    >{{
-                                        String(index + 1).padStart(2, '0')
-                                    }}</span
+                                    class="ledger text-[0.6rem] text-signal-faint"
                                 >
+                                    {{ String(index + 1).padStart(2, '0') }}
+                                </span>
                                 <a
                                     :href="reference"
                                     target="_blank"
                                     rel="noreferrer noopener"
-                                    class="link-underline min-w-0 truncate font-mono text-[0.65rem] text-ink-soft"
+                                    class="link-underline min-w-0 truncate font-mono text-[0.65rem] text-signal-muted"
                                     >{{ reference }}</a
                                 >
                             </li>
@@ -321,122 +479,117 @@ onBeforeUnmount(() => {
                     </div>
                 </section>
 
-                <section class="paper-panel p-5 sm:p-6">
-                    <p class="eyebrow">The ledger</p>
-
-                    <div
-                        v-if="charge"
-                        class="mt-4 divide-y divide-line-soft font-mono text-[0.72rem]"
-                    >
-                        <div class="flex justify-between gap-4 py-2.5">
-                            <span class="text-ink-soft">Input text</span>
-                            <span class="text-ink"
-                                >{{
-                                    (
-                                        usage.input_text_tokens ?? 0
-                                    ).toLocaleString()
-                                }}
-                                tokens</span
-                            >
-                        </div>
-                        <div class="flex justify-between gap-4 py-2.5">
-                            <span class="text-ink-soft">Input images</span>
-                            <span class="text-ink"
-                                >{{
-                                    (
-                                        usage.input_image_tokens ?? 0
-                                    ).toLocaleString()
-                                }}
-                                tokens</span
-                            >
-                        </div>
-                        <div class="flex justify-between gap-4 py-2.5">
-                            <span class="text-ink-soft">Output</span>
-                            <span class="text-ink"
-                                >{{
-                                    (usage.output_tokens ?? 0).toLocaleString()
-                                }}
-                                tokens</span
-                            >
-                        </div>
-                        <div class="flex justify-between gap-4 py-2.5">
-                            <span class="text-ink-soft">Reasoning</span>
-                            <span class="text-ink"
-                                >{{
-                                    (
-                                        usage.reasoning_tokens ?? 0
-                                    ).toLocaleString()
-                                }}
-                                tokens</span
-                            >
-                        </div>
-                        <div class="flex justify-between gap-4 py-2.5">
-                            <span class="text-ink-soft">Total</span>
-                            <span class="text-ink"
-                                >{{
-                                    (usage.total_tokens ?? 0).toLocaleString()
-                                }}
-                                tokens</span
-                            >
-                        </div>
-
-                        <div
-                            v-if="providerCost"
-                            class="flex justify-between gap-4 py-2.5"
+                <section
+                    class="border-t border-line py-7"
+                    aria-labelledby="ledger-heading"
+                >
+                    <div class="flex items-baseline justify-between gap-4">
+                        <h2 id="ledger-heading" class="eyebrow text-[0.58rem]">
+                            02 / Charge & usage
+                        </h2>
+                        <span
+                            class="font-mono text-[0.58rem] tracking-[0.1em] text-signal-faint uppercase"
+                            >Exact accounting</span
                         >
-                            <span class="text-ink-soft">Provider cost</span>
-                            <span class="text-ink">${{ providerCost }}</span>
-                        </div>
-
-                        <div class="flex items-end justify-between gap-4 pt-4">
-                            <div>
-                                <p
-                                    class="font-mono text-[0.58rem] tracking-[0.14em] text-ink-soft uppercase"
-                                >
-                                    Charged to you
-                                </p>
-                                <p class="mt-1 text-[0.6rem] text-ink-soft">
-                                    Incl.
-                                    {{ generation.estimate.markup_percent }}%
-                                    studio fee · settled
-                                    {{ formatDateTime(charge.settled_at) }}
-                                </p>
-                            </div>
-                            <p
-                                class="font-display text-3xl tracking-[-0.035em] text-vermilion"
-                            >
-                                {{ charge.customer_charge }}
-                            </p>
-                        </div>
-                        <p
-                            class="ledger pt-2 text-right text-[0.55rem] text-ink-soft"
-                        >
-                            {{ charge.customer_charge_exact }}
-                        </p>
                     </div>
 
-                    <div v-else-if="active" class="mt-4 space-y-3">
-                        <p class="text-sm leading-relaxed text-ink-soft">
-                            Token usage is only known when Pixelforge finishes.
-                            The estimate below is the range you were shown
-                            before submitting.
-                        </p>
-                        <dl class="space-y-2 font-mono text-[0.7rem]">
-                            <div class="flex justify-between gap-4">
-                                <dt class="text-ink-soft">Estimated</dt>
-                                <dd class="text-ink">
+                    <dl
+                        v-if="charge || hasUsage"
+                        class="mt-5 grid gap-x-9 sm:grid-cols-2"
+                    >
+                        <div
+                            v-for="row in tokenRows"
+                            :key="row.label"
+                            class="flex items-baseline justify-between gap-4 border-b border-line-soft py-2.5"
+                        >
+                            <dt
+                                class="font-mono text-[0.6rem] tracking-[0.12em] text-signal-muted uppercase"
+                            >
+                                {{ row.label }}
+                            </dt>
+                            <dd class="ledger text-sm text-signal">
+                                {{ row.display }}
+                            </dd>
+                        </div>
+                    </dl>
+
+                    <div
+                        v-if="charge || recordedCost"
+                        class="mt-7 flex flex-wrap items-end justify-between gap-5 border-t border-line pt-5"
+                    >
+                        <div>
+                            <p class="eyebrow text-[0.55rem]">Charged to you</p>
+                            <p
+                                class="mt-1.5 font-mono text-[0.6rem] leading-relaxed text-signal-faint"
+                            >
+                                Incl. {{ generation.estimate.markup_percent }}%
+                                studio fee<span v-if="charge">
+                                    · settled
                                     {{
-                                        generation.estimate.customer_charge.min
+                                        formatDateTime(charge.settled_at)
+                                    }}</span
+                                ><span v-else> · recorded</span>
+                            </p>
+                        </div>
+                        <div class="text-right">
+                            <p class="ledger text-3xl text-signal">
+                                {{
+                                    charge?.customer_charge ??
+                                    recordedCost?.customer_charge
+                                }}
+                            </p>
+                            <p
+                                class="ledger mt-1.5 text-[0.62rem] text-signal-faint"
+                            >
+                                {{
+                                    charge?.customer_charge_exact ??
+                                    recordedCost?.customer_charge_exact
+                                }}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div
+                        v-if="providerCost"
+                        class="mt-4 flex items-baseline justify-between gap-4 border-t border-line-soft pt-3"
+                    >
+                        <span
+                            class="font-mono text-[0.6rem] tracking-[0.12em] text-signal-muted uppercase"
+                            >Provider cost</span
+                        >
+                        <span class="ledger text-sm text-signal">{{
+                            providerCost
+                        }}</span>
+                    </div>
+
+                    <div v-else-if="active" class="mt-6 space-y-4">
+                        <p class="text-sm leading-relaxed text-signal-muted">
+                            Token usage and the final charge are only known once
+                            the provider finishes. The figures below are the
+                            estimate shown before submission.
+                        </p>
+                        <dl class="space-y-2.5 font-mono text-[0.7rem]">
+                            <div
+                                class="flex justify-between gap-4 border-b border-line-soft pb-2.5"
+                            >
+                                <dt class="text-signal-muted">Estimated</dt>
+                                <dd class="ledger text-signal">
+                                    {{
+                                        generation.estimate.customer_charge
+                                            .min ?? '—'
                                     }}
                                     —
                                     {{
-                                        generation.estimate.customer_charge.max
+                                        generation.estimate.customer_charge
+                                            .max ?? '—'
                                     }}
                                 </dd>
                             </div>
-                            <div class="flex justify-between gap-4">
-                                <dt class="text-ink-soft">Studio fee</dt>
-                                <dd class="text-ink">
+                            <div
+                                class="flex justify-between gap-4 border-b border-line-soft pb-2.5"
+                            >
+                                <dt class="text-signal-muted">Studio fee</dt>
+                                <dd class="ledger text-signal">
                                     {{ generation.estimate.markup_percent }}%
                                 </dd>
                             </div>
@@ -444,181 +597,229 @@ onBeforeUnmount(() => {
                     </div>
 
                     <div
-                        v-else
-                        class="mt-4 border border-moss/25 bg-moss-soft px-4 py-3 text-sm text-moss"
+                        v-else-if="!charge && !recordedCost"
+                        class="mt-6 border border-line bg-paper-deep px-4 py-3"
                     >
-                        <p class="font-medium">Nothing was charged.</p>
-                        <p class="mt-1 text-xs leading-relaxed">
-                            Failed generations are free. The setup is kept so
-                            you can try again with a fresh attempt token.
+                        <p class="text-sm text-signal">Nothing was charged.</p>
+                        <p
+                            class="mt-1 text-xs leading-relaxed text-signal-muted"
+                        >
+                            Failed generations are free. The setup is kept so it
+                            can be retried with a fresh attempt token.
                         </p>
                     </div>
                 </section>
             </div>
 
-            <aside class="space-y-6">
-                <div class="paper-panel p-5">
-                    <div class="flex items-center gap-2">
+            <aside class="min-w-0 space-y-9">
+                <section
+                    class="border-t border-line pt-5"
+                    aria-labelledby="timeline-heading"
+                >
+                    <div class="flex items-center justify-between gap-3">
+                        <h2
+                            id="timeline-heading"
+                            class="eyebrow text-[0.58rem]"
+                        >
+                            03 / Timeline
+                        </h2>
                         <Clock3
-                            class="size-4 text-vermilion"
+                            class="size-3.5 text-signal-faint"
                             aria-hidden="true"
                         />
-                        <p class="eyebrow">Timeline</p>
                     </div>
 
-                    <ol v-if="hasTimeline" class="mt-5 space-y-4">
+                    <ol v-if="hasTimeline" class="mt-5">
                         <li
                             v-for="(event, index) in timeline"
                             :key="event.label"
-                            class="relative flex gap-3"
+                            class="relative border-l border-line pb-5 pl-5 last:border-l-transparent last:pb-0"
                         >
                             <span
-                                class="mt-1 flex size-4 shrink-0 items-center justify-center border"
+                                class="absolute top-1 -left-[3px] size-[5px] border"
                                 :class="
                                     index === timeline.length - 1
-                                        ? 'border-vermilion bg-vermilion-soft'
-                                        : 'border-line bg-paper'
+                                        ? 'border-signal bg-signal'
+                                        : 'border-signal-faint bg-background'
                                 "
                                 aria-hidden="true"
+                            />
+                            <p class="text-xs text-signal">{{ event.label }}</p>
+                            <p
+                                class="ledger mt-1 text-[0.6rem] text-signal-faint"
                             >
-                                <span
-                                    class="size-1.5"
-                                    :class="
-                                        index === timeline.length - 1
-                                            ? 'bg-vermilion'
-                                            : 'bg-line'
-                                    "
-                                />
-                            </span>
-                            <div class="min-w-0">
-                                <p class="text-xs font-medium text-ink">
-                                    {{ event.label }}
-                                </p>
-                                <p
-                                    class="mt-0.5 font-mono text-[0.55rem] tracking-[0.05em] text-ink-soft"
-                                >
-                                    {{ formatDateTime(event.value) }}
-                                </p>
-                            </div>
+                                {{ formatDateTime(event.value) }}
+                            </p>
                         </li>
                     </ol>
 
-                    <p v-else class="mt-4 text-sm text-ink-soft">
-                        Waiting for the first confirmation from Pixelforge.
+                    <p v-else class="mt-4 text-sm text-signal-muted">
+                        Waiting for the first confirmation from the provider.
                     </p>
 
-                    <div
+                    <p
                         v-if="active"
-                        class="mt-5 flex items-center gap-2 border-t border-line-soft pt-3 font-mono text-[0.55rem] tracking-[0.1em] text-ink-soft uppercase"
+                        class="mt-4 border-t border-line-soft pt-3 font-mono text-[0.58rem] leading-relaxed tracking-[0.1em] text-signal-faint uppercase"
                     >
-                        <span
-                            class="status-dot animate-breathe bg-vermilion"
-                            aria-hidden="true"
-                        />
-                        Live · checks every 5s
-                    </div>
-                </div>
+                        Live · automatic checks every 5s while this tab is
+                        visible
+                    </p>
+                </section>
 
-                <div class="paper-panel p-5">
-                    <p class="eyebrow">Set up</p>
-                    <dl class="mt-4 space-y-3 font-mono text-[0.65rem]">
-                        <div class="flex justify-between gap-3">
-                            <dt class="text-ink-soft">Proportion</dt>
-                            <dd class="text-right text-ink">
+                <section
+                    class="border-t border-line pt-5"
+                    aria-labelledby="setup-heading"
+                >
+                    <h2 id="setup-heading" class="eyebrow text-[0.58rem]">
+                        04 / Setup
+                    </h2>
+                    <dl class="mt-5 space-y-3 font-mono text-[0.65rem]">
+                        <div
+                            class="flex justify-between gap-3 border-b border-line-soft pb-3"
+                        >
+                            <dt class="text-signal-muted">Proportion</dt>
+                            <dd class="text-right text-signal">
                                 {{ ratioLabel(generation.size) }}
                             </dd>
                         </div>
-                        <div class="flex justify-between gap-3">
-                            <dt class="text-ink-soft">Quality</dt>
-                            <dd class="text-right text-ink">
+                        <div
+                            class="flex justify-between gap-3 border-b border-line-soft pb-3"
+                        >
+                            <dt class="text-signal-muted">Quality</dt>
+                            <dd class="text-right text-signal">
                                 {{ qualityLabel(generation.quality) }}
                             </dd>
                         </div>
-                        <div class="flex justify-between gap-3">
-                            <dt class="text-ink-soft">References</dt>
-                            <dd class="text-right text-ink">
+                        <div
+                            class="flex justify-between gap-3 border-b border-line-soft pb-3"
+                        >
+                            <dt class="text-signal-muted">References</dt>
+                            <dd class="ledger text-right text-signal">
                                 {{ generation.reference_images.length }}
                             </dd>
                         </div>
-                        <div class="flex justify-between gap-3">
-                            <dt class="text-ink-soft">Composed</dt>
-                            <dd class="text-right text-ink">
+                        <div
+                            class="flex justify-between gap-3 border-b border-line-soft pb-3"
+                        >
+                            <dt class="text-signal-muted">Composed</dt>
+                            <dd class="text-right text-signal">
                                 {{ formatDateTime(generation.created_at) }}
                             </dd>
                         </div>
+                        <div
+                            class="flex justify-between gap-3 border-b border-line-soft pb-3"
+                        >
+                            <dt class="text-signal-muted">Updated</dt>
+                            <dd class="text-right text-signal">
+                                {{ formatDateTime(generation.updated_at) }}
+                            </dd>
+                        </div>
                     </dl>
-                </div>
+                </section>
 
-                <div
+                <section
                     v-if="generation.failure"
-                    class="border border-vermilion/30 bg-vermilion-soft p-5"
+                    class="border border-line bg-paper-deep p-5"
+                    aria-labelledby="failure-heading"
                 >
-                    <p
-                        class="font-mono text-[0.58rem] tracking-[0.14em] text-vermilion uppercase"
-                    >
-                        Failure ·
-                        {{ generation.failure.stage ?? 'unknown stage' }}
-                    </p>
-                    <p class="mt-2 text-sm leading-relaxed text-ink">
-                        {{ generation.failure.message }}
-                    </p>
-                    <p
-                        class="mt-3 font-mono text-[0.55rem] tracking-[0.06em] text-ink-soft"
-                    >
-                        {{ generation.failure.code }}
-                    </p>
+                    <div class="flex items-start gap-3">
+                        <AlertTriangle
+                            class="mt-0.5 size-4 shrink-0 text-signal"
+                            aria-hidden="true"
+                        />
+                        <div>
+                            <h2
+                                id="failure-heading"
+                                class="font-mono text-[0.58rem] tracking-[0.14em] text-signal uppercase"
+                            >
+                                Failure ·
+                                {{
+                                    generation.failure.stage ?? 'unknown stage'
+                                }}
+                            </h2>
+                            <p class="mt-2 text-sm leading-relaxed text-signal">
+                                {{ generation.failure.message }}
+                            </p>
+                            <p
+                                class="ledger mt-3 text-[0.6rem] text-signal-faint"
+                            >
+                                {{ generation.failure.code }}
+                            </p>
+                        </div>
+                    </div>
                     <Link
                         :href="generation.prefill_url"
-                        class="focus-ring mt-4 inline-flex items-center gap-2 bg-ink px-4 py-2 text-xs font-medium text-paper hover:bg-vermilion"
+                        class="focus-ring mt-5 inline-flex items-center gap-2 border border-signal px-4 py-2 font-mono text-[0.62rem] tracking-[0.12em] text-signal uppercase transition-colors hover:bg-signal hover:text-signal-invert"
                     >
                         <RefreshCw class="size-3.5" aria-hidden="true" />
                         Retry this setup
                     </Link>
-                </div>
+                </section>
 
-                <div v-if="generation.provider" class="paper-panel p-5">
-                    <p class="eyebrow">Operator view</p>
-                    <dl class="mt-4 space-y-2 font-mono text-[0.6rem]">
-                        <div class="flex justify-between gap-3">
-                            <dt class="text-ink-soft">Provider id</dt>
-                            <dd class="truncate text-right text-ink">
+                <section
+                    v-if="generation.provider"
+                    class="border-t border-line pt-5"
+                    aria-labelledby="provider-heading"
+                >
+                    <div class="flex items-baseline justify-between gap-3">
+                        <h2
+                            id="provider-heading"
+                            class="eyebrow text-[0.58rem]"
+                        >
+                            05 / Operator view
+                        </h2>
+                        <span
+                            class="font-mono text-[0.55rem] tracking-[0.1em] text-signal-faint uppercase"
+                            >Admin only</span
+                        >
+                    </div>
+                    <dl class="mt-5 space-y-3 font-mono text-[0.6rem]">
+                        <div
+                            class="flex justify-between gap-3 border-b border-line-soft pb-2.5"
+                        >
+                            <dt class="text-signal-muted">Provider id</dt>
+                            <dd
+                                class="max-w-[60%] truncate text-right text-signal"
+                            >
                                 {{ generation.provider.generation_id ?? '—' }}
                             </dd>
                         </div>
-                        <div class="flex justify-between gap-3">
-                            <dt class="text-ink-soft">Provider cost</dt>
-                            <dd class="text-right text-ink">
-                                {{
-                                    generation.provider.provider_cost
-                                        ? `$${generation.provider.provider_cost}`
-                                        : '—'
-                                }}
+                        <div
+                            class="flex justify-between gap-3 border-b border-line-soft pb-2.5"
+                        >
+                            <dt class="text-signal-muted">Provider cost</dt>
+                            <dd class="ledger text-right text-signal">
+                                {{ generation.provider.provider_cost ?? '—' }}
                             </dd>
                         </div>
-                        <div class="flex justify-between gap-3">
-                            <dt class="text-ink-soft">Submits</dt>
-                            <dd class="text-right text-ink">
+                        <div
+                            class="flex justify-between gap-3 border-b border-line-soft pb-2.5"
+                        >
+                            <dt class="text-signal-muted">Submits</dt>
+                            <dd class="ledger text-right text-signal">
                                 {{ generation.provider.submit_attempts }}
                             </dd>
                         </div>
-                        <div class="flex justify-between gap-3">
-                            <dt class="text-ink-soft">Reconciles</dt>
-                            <dd class="text-right text-ink">
+                        <div
+                            class="flex justify-between gap-3 border-b border-line-soft pb-2.5"
+                        >
+                            <dt class="text-signal-muted">Reconciles</dt>
+                            <dd class="ledger text-right text-signal">
                                 {{ generation.provider.reconcile_attempts }}
                             </dd>
                         </div>
                     </dl>
                     <pre
                         v-if="generation.provider.error"
-                        class="mt-3 max-h-40 overflow-auto border border-line-soft bg-background/50 p-2 text-[0.55rem] leading-relaxed text-ink-soft"
+                        class="mt-4 max-h-40 overflow-auto border border-line-soft bg-background p-3 font-mono text-[0.55rem] leading-relaxed text-signal-muted"
                         >{{
                             JSON.stringify(generation.provider.error, null, 2)
                         }}</pre>
-                </div>
+                </section>
 
                 <p
                     v-if="hasUsage && !providerCost"
-                    class="px-1 text-[0.65rem] leading-relaxed text-ink-soft"
+                    class="px-1 font-mono text-[0.6rem] leading-relaxed text-signal-faint"
                 >
                     Provider cost is visible to studio operators only. Your
                     charge includes the flat

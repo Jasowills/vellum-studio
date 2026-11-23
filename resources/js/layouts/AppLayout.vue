@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { Link, router, usePage } from '@inertiajs/vue3';
 import {
+    ChartNoAxesColumn,
     ChevronDown,
+    Images,
     LogOut,
     Menu,
     Settings,
@@ -39,320 +41,297 @@ const path = computed(() => page.url.split('?')[0]);
 
 const navItems = computed(() => {
     const items = [
-        { label: 'Studio', href: '/studio', active: path.value === '/studio' },
-        {
-            label: 'Library',
-            href: '/library',
-            active: path.value.startsWith('/library'),
-        },
+        { label: 'Studio', href: '/studio', icon: Sparkles, match: '/studio' },
+        { label: 'Library', href: '/library', icon: Images, match: '/library' },
         {
             label: 'Usage',
             href: '/usage',
-            active: path.value.startsWith('/usage'),
+            icon: ChartNoAxesColumn,
+            match: '/usage',
         },
     ];
 
     if (isAdmin.value) {
         items.push({
-            label: 'Operator',
+            label: 'Report',
             href: '/admin/report',
-            active: path.value.startsWith('/admin'),
+            icon: ShieldCheck,
+            match: '/admin/report',
         });
     }
 
     return items;
 });
 
-const initials = computed(() => {
-    const name = user.value?.name ?? 'Vellum';
+function isActive(href: string): boolean {
+    return href === '/' ? path.value === '/' : path.value.startsWith(href);
+}
 
-    return name
-        .split(' ')
-        .filter(Boolean)
-        .slice(0, 2)
-        .map((part) => part.charAt(0).toUpperCase())
-        .join('');
+function logout(): void {
+    router.post('/logout');
+}
+
+watch(path, () => {
+    mobileOpen.value = false;
 });
 
-const status = computed(() =>
-    flashDismissed.value ? null : page.props.flash?.status,
-);
-const error = computed(() =>
-    flashDismissed.value ? null : page.props.flash?.error,
-);
+const flash = computed(() => {
+    const props = page.props as Record<string, unknown>;
+    const value = props.flash as
+        | { success?: string; error?: string; warning?: string }
+        | undefined;
 
-watch(
-    () => page.url,
-    () => {
-        mobileOpen.value = false;
-        flashDismissed.value = false;
-    },
-);
-
-const logout = () => {
-    router.flushAll();
-    router.post('/logout');
-};
+    return value?.success || value?.error || value?.warning || null;
+});
 </script>
 
 <template>
-    <div class="flex min-h-svh flex-col">
+    <div class="min-h-svh bg-background text-foreground">
         <a
-            href="#main"
-            class="sr-only z-50 bg-ink px-4 py-2 text-paper focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
+            href="#main-content"
+            class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:bg-signal focus:px-4 focus:py-2 focus:text-signal-invert"
         >
             Skip to content
         </a>
 
-        <header
-            class="sticky top-0 z-40 border-b border-line/80 bg-background/88 backdrop-blur-md"
+        <div
+            v-if="flash && !flashDismissed"
+            class="border-b border-line bg-paper-deep"
+            role="status"
+            aria-live="polite"
         >
             <div
-                class="mx-auto flex h-[4.5rem] max-w-[1320px] items-center justify-between gap-6 px-5 sm:px-8 lg:px-12"
+                class="mx-auto flex max-w-[1440px] items-center justify-between gap-4 px-5 py-2.5 font-mono text-[0.65rem] tracking-[0.05em] text-signal sm:px-8 lg:px-12"
+            >
+                <span>{{ flash }}</span>
+                <button
+                    type="button"
+                    class="focus-ring p-1 text-signal-muted transition-colors hover:text-signal"
+                    aria-label="Dismiss notification"
+                    @click="flashDismissed = true"
+                >
+                    <X class="size-3.5" aria-hidden="true" />
+                </button>
+            </div>
+        </div>
+
+        <header
+            class="sticky top-0 z-30 border-b border-line bg-background/95 backdrop-blur-[2px]"
+        >
+            <div
+                class="mx-auto flex h-16 max-w-[1440px] items-center justify-between gap-4 px-5 sm:px-8 lg:px-12"
             >
                 <Link
                     href="/studio"
-                    class="focus-ring rounded-sm"
-                    aria-label="Vellum studio"
+                    class="focus-ring"
+                    aria-label="Vellum studio home"
                 >
                     <BrandMark />
                 </Link>
 
                 <nav
-                    class="hidden items-center gap-7 md:flex"
-                    aria-label="Primary"
+                    class="hidden items-center gap-1 lg:flex"
+                    aria-label="Primary navigation"
                 >
                     <Link
                         v-for="item in navItems"
                         :key="item.href"
                         :href="item.href"
-                        class="focus-ring relative py-2 text-[0.82rem] font-medium tracking-[0.01em] transition-colors"
+                        class="group focus-ring relative inline-flex items-center gap-2 border border-transparent px-3 py-2 font-mono text-[0.65rem] tracking-[0.14em] uppercase transition-colors"
                         :class="
-                            item.active
-                                ? 'text-ink'
-                                : 'text-ink-soft hover:text-ink'
+                            isActive(item.href)
+                                ? 'border-line bg-paper text-signal'
+                                : 'text-signal-muted hover:text-signal'
                         "
-                        :aria-current="item.active ? 'page' : undefined"
+                        :aria-current="isActive(item.href) ? 'page' : undefined"
                     >
+                        <component
+                            :is="item.icon"
+                            class="size-3.5"
+                            aria-hidden="true"
+                        />
                         {{ item.label }}
                         <span
-                            v-if="item.active"
-                            class="absolute right-0 -bottom-[1.15rem] left-0 h-px bg-vermilion"
+                            v-if="isActive(item.href)"
+                            class="absolute inset-x-2 -bottom-px h-px bg-signal"
                             aria-hidden="true"
                         />
                     </Link>
                 </nav>
 
-                <div class="flex items-center gap-2 sm:gap-3">
+                <div class="hidden items-center gap-2 lg:flex">
                     <Link
-                        href="/studio"
-                        class="focus-ring hidden items-center gap-2 border border-ink bg-ink px-4 py-2 text-[0.78rem] font-medium text-paper transition-colors hover:bg-vermilion hover:text-paper sm:inline-flex"
+                        href="/settings/profile"
+                        class="focus-ring inline-flex items-center gap-2 border border-line px-3 py-2 font-mono text-[0.65rem] tracking-[0.12em] text-signal-muted uppercase transition-colors hover:border-signal hover:text-signal"
                     >
-                        <Sparkles class="size-3.5" aria-hidden="true" />
-                        New image
+                        <Settings class="size-3.5" aria-hidden="true" />
+                        Settings
                     </Link>
 
                     <DropdownMenu>
-                        <DropdownMenuTrigger as-child>
-                            <button
-                                type="button"
-                                class="focus-ring flex items-center gap-2 rounded-full p-0.5 pr-2 text-left transition-colors hover:bg-paper-deep/60"
-                                aria-label="Account menu"
-                            >
+                        <DropdownMenuTrigger
+                            class="focus-ring inline-flex items-center gap-2 border border-line px-3 py-2 text-left transition-colors hover:border-signal"
+                            as-child
+                        >
+                            <button type="button">
                                 <span
-                                    class="flex size-8 items-center justify-center rounded-full bg-ink font-mono text-[0.68rem] tracking-[0.04em] text-paper"
+                                    class="flex size-6 items-center justify-center border border-signal font-mono text-[0.6rem] text-signal"
                                     aria-hidden="true"
-                                    >{{ initials }}</span
                                 >
+                                    {{
+                                        (user?.name || 'V')
+                                            .charAt(0)
+                                            .toUpperCase()
+                                    }}
+                                </span>
                                 <span
-                                    class="hidden max-w-[9rem] truncate text-xs font-medium text-ink lg:inline"
-                                    >{{ user?.name }}</span
+                                    class="max-w-[9rem] truncate text-xs text-signal"
                                 >
+                                    {{ user?.name }}
+                                </span>
                                 <ChevronDown
-                                    class="size-3.5 text-ink-soft"
+                                    class="size-3 text-signal-muted"
                                     aria-hidden="true"
                                 />
                             </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent
                             align="end"
-                            :side-offset="8"
-                            class="w-60 rounded-none border-line bg-paper p-1.5 shadow-[0_24px_60px_-32px_rgba(33,29,23,0.45)]"
+                            :side-offset="6"
+                            class="border-line bg-popover font-sans text-popover-foreground"
                         >
-                            <DropdownMenuLabel class="px-2.5 py-2">
-                                <span
-                                    class="block font-mono text-[0.6rem] tracking-[0.14em] text-ink-soft uppercase"
-                                    >Signed in</span
-                                >
-                                <span
-                                    class="mt-1 block truncate text-sm font-medium text-ink"
-                                    >{{ user?.email }}</span
-                                >
+                            <DropdownMenuLabel
+                                class="font-mono text-[0.6rem] tracking-[0.16em] text-signal-muted uppercase"
+                            >
+                                {{ user?.email }}
                             </DropdownMenuLabel>
                             <DropdownMenuSeparator class="bg-line" />
-                            <DropdownMenuItem
-                                v-if="isAdmin"
-                                :as-child="true"
-                                class="rounded-none focus:bg-paper-deep"
-                            >
-                                <Link
-                                    href="/admin/report"
-                                    class="flex w-full cursor-pointer items-center gap-2.5 px-2 py-2 text-sm"
-                                >
-                                    <ShieldCheck
-                                        class="size-4 text-ink-soft"
-                                        aria-hidden="true"
-                                    />
-                                    Operator's ledger
-                                </Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                                :as-child="true"
-                                class="rounded-none focus:bg-paper-deep"
-                            >
+                            <DropdownMenuItem as-child>
                                 <Link
                                     href="/settings/profile"
-                                    class="flex w-full cursor-pointer items-center gap-2.5 px-2 py-2 text-sm"
+                                    class="focus:bg-accent"
                                 >
                                     <Settings
-                                        class="size-4 text-ink-soft"
+                                        class="size-3.5"
                                         aria-hidden="true"
                                     />
-                                    Settings
+                                    Profile settings
                                 </Link>
                             </DropdownMenuItem>
-                            <DropdownMenuSeparator class="bg-line" />
                             <DropdownMenuItem
-                                class="cursor-pointer rounded-none px-2 py-2 text-sm focus:bg-paper-deep"
+                                class="focus:bg-accent"
                                 @select="logout"
                             >
-                                <LogOut
-                                    class="mr-2.5 size-4 text-ink-soft"
-                                    aria-hidden="true"
-                                />
-                                Log out
+                                <LogOut class="size-3.5" aria-hidden="true" />
+                                Sign out
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
-
-                    <button
-                        type="button"
-                        class="focus-ring inline-flex size-9 items-center justify-center border border-line text-ink md:hidden"
-                        :aria-expanded="mobileOpen"
-                        aria-controls="mobile-navigation"
-                        aria-label="Toggle navigation"
-                        @click="mobileOpen = !mobileOpen"
-                    >
-                        <X
-                            v-if="mobileOpen"
-                            class="size-4"
-                            aria-hidden="true"
-                        />
-                        <Menu v-else class="size-4" aria-hidden="true" />
-                    </button>
                 </div>
+
+                <button
+                    type="button"
+                    class="focus-ring inline-flex size-9 items-center justify-center border border-line text-signal lg:hidden"
+                    :aria-expanded="mobileOpen"
+                    aria-controls="mobile-navigation"
+                    :aria-label="
+                        mobileOpen ? 'Close navigation' : 'Open navigation'
+                    "
+                    @click="mobileOpen = !mobileOpen"
+                >
+                    <X v-if="mobileOpen" class="size-4" aria-hidden="true" />
+                    <Menu v-else class="size-4" aria-hidden="true" />
+                </button>
             </div>
 
             <div
                 v-if="mobileOpen"
                 id="mobile-navigation"
-                class="border-t border-line bg-paper/95 md:hidden"
+                class="border-t border-line bg-background lg:hidden"
             >
                 <nav
-                    class="mx-auto flex max-w-[1320px] flex-col px-5 py-3 sm:px-8"
-                    aria-label="Mobile"
+                    class="flex flex-col px-5 py-3"
+                    aria-label="Mobile navigation"
                 >
                     <Link
                         v-for="item in navItems"
                         :key="item.href"
                         :href="item.href"
-                        class="focus-ring flex items-center justify-between border-b border-line-soft py-3 text-sm"
-                        :class="item.active ? 'text-vermilion' : 'text-ink'"
-                        :aria-current="item.active ? 'page' : undefined"
-                        @click="mobileOpen = false"
+                        class="flex items-center gap-3 border-b border-line-soft px-1 py-3 font-mono text-[0.68rem] tracking-[0.14em] uppercase"
+                        :class="
+                            isActive(item.href)
+                                ? 'text-signal'
+                                : 'text-signal-muted'
+                        "
+                        :aria-current="isActive(item.href) ? 'page' : undefined"
                     >
+                        <component
+                            :is="item.icon"
+                            class="size-3.5"
+                            aria-hidden="true"
+                        />
                         {{ item.label }}
-                        <span class="font-mono text-[0.6rem]" aria-hidden="true"
-                            >↗</span
-                        >
                     </Link>
                     <Link
-                        href="/studio"
-                        class="focus-ring mt-3 inline-flex items-center justify-center gap-2 bg-ink px-4 py-3 text-sm font-medium text-paper"
-                        @click="mobileOpen = false"
+                        href="/settings/profile"
+                        class="flex items-center gap-3 border-b border-line-soft px-1 py-3 font-mono text-[0.68rem] tracking-[0.14em] text-signal-muted uppercase"
                     >
-                        <Sparkles class="size-4" aria-hidden="true" />
-                        Start a new image
+                        <Settings class="size-3.5" aria-hidden="true" />
+                        Settings
                     </Link>
+                    <button
+                        type="button"
+                        class="mt-3 flex items-center gap-3 border border-line px-3 py-3 font-mono text-[0.68rem] tracking-[0.14em] text-signal uppercase"
+                        @click="logout"
+                    >
+                        <LogOut class="size-3.5" aria-hidden="true" />
+                        Sign out
+                    </button>
+                    <p
+                        class="mt-4 truncate font-mono text-[0.6rem] text-signal-faint"
+                    >
+                        {{ user?.email }}
+                    </p>
                 </nav>
             </div>
         </header>
 
         <div
-            v-if="status || error"
-            class="mx-auto w-full max-w-[1320px] px-5 pt-6 sm:px-8 lg:px-12"
+            v-if="breadcrumbs.length"
+            class="border-b border-line-soft bg-background"
         >
             <div
-                class="flex items-start justify-between gap-4 border px-4 py-3 text-sm"
-                :class="
-                    error
-                        ? 'border-vermilion/30 bg-vermilion-soft text-vermilion'
-                        : 'border-moss/30 bg-moss-soft text-moss'
-                "
-                :role="error ? 'alert' : 'status'"
+                class="mx-auto flex max-w-[1440px] items-center gap-2 overflow-x-auto px-5 py-3 font-mono text-[0.6rem] tracking-[0.12em] text-signal-faint uppercase sm:px-8 lg:px-12"
             >
-                <p>{{ error ?? status }}</p>
-                <button
-                    type="button"
-                    class="focus-ring shrink-0 font-mono text-[0.6rem] tracking-[0.12em] uppercase opacity-70 hover:opacity-100"
-                    aria-label="Dismiss message"
-                    @click="flashDismissed = true"
-                >
-                    Dismiss
-                </button>
+                <template v-for="(crumb, index) in breadcrumbs" :key="index">
+                    <span v-if="index > 0" aria-hidden="true">/</span>
+                    <Link
+                        v-if="crumb.href && index < breadcrumbs.length - 1"
+                        :href="crumb.href"
+                        class="hover:text-signal"
+                    >
+                        {{ crumb.title }}
+                    </Link>
+                    <span v-else class="text-signal-muted">{{
+                        crumb.title
+                    }}</span>
+                </template>
             </div>
         </div>
 
-        <main id="main" class="flex-1">
-            <div
-                class="mx-auto w-full max-w-[1320px] px-5 py-10 sm:px-8 lg:px-12 lg:py-14"
-            >
-                <slot />
-            </div>
+        <main
+            id="main-content"
+            class="mx-auto max-w-[1440px] px-5 py-8 sm:px-8 lg:px-12 lg:py-10"
+        >
+            <slot />
         </main>
 
-        <footer class="border-t border-line">
+        <footer class="border-t border-line-soft">
             <div
-                class="mx-auto flex max-w-[1320px] flex-col gap-6 px-5 py-8 sm:px-8 md:flex-row md:items-end md:justify-between lg:px-12"
+                class="mx-auto flex max-w-[1440px] flex-col gap-3 px-5 py-6 font-mono text-[0.58rem] tracking-[0.14em] text-signal-faint uppercase sm:flex-row sm:items-center sm:justify-between sm:px-8 lg:px-12"
             >
-                <div class="space-y-3">
-                    <BrandMark compact />
-                    <p class="max-w-md text-xs leading-relaxed text-ink-soft">
-                        A small studio for considered images. Every charge is
-                        recorded to the nanodollar; failed generations cost
-                        nothing.
-                    </p>
-                </div>
-                <div
-                    class="flex flex-wrap gap-x-6 gap-y-2 font-mono text-[0.6rem] tracking-[0.12em] text-ink-soft uppercase"
-                >
-                    <Link href="/studio" class="hover:text-vermilion"
-                        >Studio</Link
-                    >
-                    <Link href="/library" class="hover:text-vermilion"
-                        >Library</Link
-                    >
-                    <Link href="/usage" class="hover:text-vermilion"
-                        >Usage</Link
-                    >
-                    <a
-                        href="https://pixelforge.promptedit.dev/docs"
-                        target="_blank"
-                        rel="noreferrer"
-                        class="hover:text-vermilion"
-                        >Pixelforge API ↗</a
-                    >
-                </div>
+                <span>Vellum / Signal studio</span>
+                <span>Exact accounting · Private archive</span>
             </div>
         </footer>
     </div>

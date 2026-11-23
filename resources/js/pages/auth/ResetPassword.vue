@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
 import { ref } from 'vue';
+import { AlertCircle } from '@lucide/vue';
 import InputError from '@/components/InputError.vue';
 import PasswordInput from '@/components/PasswordInput.vue';
 import { Button } from '@/components/ui/button';
@@ -23,6 +24,14 @@ const props = defineProps<{
 }>();
 
 const inputEmail = ref(props.email);
+
+const inputClass =
+    'h-11 rounded-none border-line bg-paper-deep text-signal placeholder:text-signal-muted dark:bg-paper-deep focus-visible:border-signal focus-visible:ring-signal/25';
+const labelClass =
+    'font-mono text-[0.68rem] font-normal tracking-[0.16em] text-signal uppercase';
+const submitClass =
+    'mt-1 h-11 w-full border border-signal bg-signal font-mono text-[0.72rem] tracking-[0.16em] text-signal-invert uppercase hover:bg-signal/85 focus-visible:ring-signal disabled:opacity-60';
+const errorClass = '[&_p]:text-signal!';
 </script>
 
 <template>
@@ -34,56 +43,101 @@ const inputEmail = ref(props.email);
         :reset-on-success="['password', 'password_confirmation']"
         v-slot="{ errors, processing }"
     >
-        <div class="grid gap-6">
+        <div class="grid gap-5">
             <div class="grid gap-2">
-                <Label for="email">Email</Label>
+                <Label for="email" :class="labelClass">Email</Label>
                 <Input
                     id="email"
                     type="email"
                     name="email"
                     autocomplete="email"
                     v-model="inputEmail"
-                    class="mt-1 block w-full"
                     readonly
+                    :class="[inputClass, 'text-signal-muted']"
+                    :aria-invalid="Boolean(errors.email)"
+                    aria-describedby="email-error"
                 />
-                <InputError :message="errors.email" class="mt-2" />
+                <div
+                    id="email-error"
+                    :class="errorClass"
+                    class="flex min-h-5 items-start gap-2"
+                    aria-live="polite"
+                >
+                    <AlertCircle
+                        v-if="errors.email"
+                        class="mt-0.5 size-3.5 shrink-0 text-signal"
+                        aria-hidden="true"
+                    />
+                    <InputError :message="errors.email" />
+                </div>
             </div>
 
             <div class="grid gap-2">
-                <Label for="password">Password</Label>
+                <Label for="password" :class="labelClass">Password</Label>
                 <PasswordInput
                     id="password"
                     name="password"
                     autocomplete="new-password"
-                    class="mt-1 block w-full"
                     autofocus
                     placeholder="Password"
                     :passwordrules="passwordRules"
+                    :class="inputClass"
+                    :aria-invalid="Boolean(errors.password)"
+                    aria-describedby="password-error"
                 />
-                <InputError :message="errors.password" />
+                <div
+                    id="password-error"
+                    :class="errorClass"
+                    class="flex min-h-5 items-start gap-2"
+                    aria-live="polite"
+                >
+                    <AlertCircle
+                        v-if="errors.password"
+                        class="mt-0.5 size-3.5 shrink-0 text-signal"
+                        aria-hidden="true"
+                    />
+                    <InputError :message="errors.password" />
+                </div>
             </div>
 
             <div class="grid gap-2">
-                <Label for="password_confirmation"> Confirm password </Label>
+                <Label for="password_confirmation" :class="labelClass">
+                    Confirm password
+                </Label>
                 <PasswordInput
                     id="password_confirmation"
                     name="password_confirmation"
                     autocomplete="new-password"
-                    class="mt-1 block w-full"
                     placeholder="Confirm password"
                     :passwordrules="passwordRules"
+                    :class="inputClass"
+                    :aria-invalid="Boolean(errors.password_confirmation)"
+                    aria-describedby="password-confirmation-error"
                 />
-                <InputError :message="errors.password_confirmation" />
+                <div
+                    id="password-confirmation-error"
+                    :class="errorClass"
+                    class="flex min-h-5 items-start gap-2"
+                    aria-live="polite"
+                >
+                    <AlertCircle
+                        v-if="errors.password_confirmation"
+                        class="mt-0.5 size-3.5 shrink-0 text-signal"
+                        aria-hidden="true"
+                    />
+                    <InputError :message="errors.password_confirmation" />
+                </div>
             </div>
 
             <Button
                 type="submit"
-                class="mt-4 w-full"
+                :class="submitClass"
                 :disabled="processing"
+                :aria-busy="processing"
                 data-test="reset-password-button"
             >
                 <Spinner v-if="processing" />
-                Reset password
+                {{ processing ? 'Resetting password...' : 'Reset password' }}
             </Button>
         </div>
     </Form>
