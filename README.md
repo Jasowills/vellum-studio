@@ -27,15 +27,15 @@ Vellum is a Laravel 13 + Vue 3 + Inertia + TypeScript + Tailwind 4 application t
 
 ## Stack
 
-| Layer         | Choice                                                                    |
-| ------------- | ------------------------------------------------------------------------- |
-| Backend       | Laravel 13, PHP 8.4                                                       |
-| Frontend      | Vue 3, Inertia 3, TypeScript, Vite Plus, Tailwind CSS 4                   |
-| Money         | `brick/math` decimal arithmetic, stored as integer nanodollars            |
-| Auth          | Laravel Fortify (email/password, passkeys, 2FA, verification)             |
-| Queue / cache | Redis (configurable)                                                      |
-| Database      | MySQL in development/demo; SQLite in tests                                |
-| Design        | SIGNAL monochrome system — Geist, Instrument Serif, Geist Mono, Three.js  |
+| Layer         | Choice                                                                   |
+| ------------- | ------------------------------------------------------------------------ |
+| Backend       | Laravel 13, PHP 8.4                                                      |
+| Frontend      | Vue 3, Inertia 3, TypeScript, Vite Plus, Tailwind CSS 4                  |
+| Money         | `brick/math` decimal arithmetic, stored as integer nanodollars           |
+| Auth          | Laravel Fortify (email/password, passkeys, 2FA, verification)            |
+| Queue / cache | Redis (configurable)                                                     |
+| Database      | MySQL in development/demo; SQLite in tests                               |
+| Design        | SIGNAL monochrome system — Geist, Instrument Serif, Geist Mono, Three.js |
 
 ---
 

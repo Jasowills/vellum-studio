@@ -215,16 +215,16 @@ Responsive and state coverage:
 
 Browser QA was rerun after the redesign at **1440, 1280, 768, and 390 px** on the landing page, studio, library, generation detail, usage, admin report, profile settings, and appearance settings, plus auth pages at 1440/768/390. For every page/breakpoint pair checked:
 
-| Check                                   | Result                                      |
-| --------------------------------------- | ------------------------------------------- |
-| Horizontal document overflow            | none                                        |
-| Broken images                           | none                                        |
-| Console errors / 4xx responses          | none for the correct role and route         |
-| Computed chromatic CSS colors           | 0                                           |
-| Body / display / mono font families     | Geist / Instrument Serif / Geist Mono       |
-| Unlabelled visible form fields          | 0                                           |
-| WebGL canvas on landing                 | 1; removed on route change to `/studio`     |
-| `prefers-reduced-motion: reduce`        | no armed reveals, `scroll-behavior: auto`   |
+| Check                               | Result                                    |
+| ----------------------------------- | ----------------------------------------- |
+| Horizontal document overflow        | none                                      |
+| Broken images                       | none                                      |
+| Console errors / 4xx responses      | none for the correct role and route       |
+| Computed chromatic CSS colors       | 0                                         |
+| Body / display / mono font families | Geist / Instrument Serif / Geist Mono     |
+| Unlabelled visible form fields      | 0                                         |
+| WebGL canvas on landing             | 1; removed on route change to `/studio`   |
+| `prefers-reduced-motion: reduce`    | no armed reveals, `scroll-behavior: auto` |
 
 Screenshot pixel histograms were also checked: all captured pages rendered at **100% grayscale**, with only neutral channel values. The earlier axe-core pass on the pre-redesign UI found no WCAG A/AA violations; keyboard focus, ARIA labels, skip links, and reduced-motion behavior were rechecked manually through DOM and browser automation after the redesign.
 
